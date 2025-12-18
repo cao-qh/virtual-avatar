@@ -1,3 +1,8 @@
+import { saveAudioToFile } from "./saveAudioToFile"
+
+// 一句话检测状态（使用字符串常量代替枚举，因为TypeScript配置了erasableSyntaxOnly）
+type SentenceDetectionState = "idle" | "recording" | "silence_detected"
+
 interface SentenceDetectionConfig {
   silenceThreshold: number // 静音音量阈值（0-255）
   silenceDuration: number // 静音持续时间阈值（ms）
@@ -11,12 +16,16 @@ let analyser: AnalyserNode | null = null
 let recorder: MediaRecorder | null = null
 // 检测说话的定时器
 let checkRecorditval: number | null = null
+// 开始静音的时间
+let silenceStartTime: number = 0
+let speechStartTime: number = 0
+let sentenceDetectionState: SentenceDetectionState = "idle"
 
 // 配置参数
 let sentenceDetectionConfig: SentenceDetectionConfig = {
   silenceThreshold: 18, // 提高阈值，避免环境噪音误判（基于日志分析）
   silenceDuration: 800, // 适当减少静音时间，提高响应速度
-  minSpeechDuration: 300, // 减少最小语音时长，避免过短的录音
+  minSpeechDuration: 500, // 减少最小语音时长，避免过短的录音
   maxSentenceDuration: 8000, // 减少最大句子时长，避免过长等待
 }
 
@@ -47,7 +56,7 @@ async function requestMicrophonePermission(): Promise<MediaStream> {
  * 开始录音
  * @returns 返回录音对象
  */
-export async function startRecording(): Promise<MediaRecorder> {
+export async function startRecording(onAudioData: (chunk: Blob) => void,): Promise<MediaRecorder> {
   try {
     // 请求麦克风权限
     const audioStream = await requestMicrophonePermission()
@@ -58,16 +67,60 @@ export async function startRecording(): Promise<MediaRecorder> {
       mimeType: "audio/webm; codecs=opus",
       audioBitsPerSecond: 32000, // 32kbps，语音足够
     })
+
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        onAudioData(event.data)
+        // console.log("event.data:", event.data)
+        // saveAudioToFile(event.data)
+        // 发送录音数据
+        // ...
+      }
+    }
+
     console.log("已创建录音对象...")
 
     // 检测是否在说话
     checkRecorditval = setInterval(() => {
       if (isMute()) {
-        console.log("mute...")
+        // silenceStartTime = Date.now()
+        // console.log("mute...")
+        if (sentenceDetectionState === "recording") {
+          // 正在录音
+          const now = Date.now()
+          // 开始说话的时间和当前时间差
+          const itvl = now - speechStartTime
+          // 如果大于阈值，则认为已结束说话
+          if (itvl < sentenceDetectionConfig.minSpeechDuration) {
+            // 说明是说话间的正常沉默间隔不用理会
+            return
+          } else {
+            // 怀疑可能一句话说完了
+            sentenceDetectionState = "silence_detected"
+            silenceStartTime = now
+          }
+        } else if (sentenceDetectionState === "silence_detected") {
+          // 检查是否一句话说完了
+          const now = Date.now()
+          if (now - silenceStartTime > sentenceDetectionConfig.silenceDuration) {
+            // 静音时间超过阈值，认为已结束说话
+            sentenceDetectionState = "idle"
+            console.log("idle...")
+            recorder?.stop()
+          }
+        }
       } else {
-        console.log("speaking...")
         // 检测到说话了，开始录音
-        
+        if (sentenceDetectionState === "idle") {
+          console.log("recording...")
+          sentenceDetectionState = "recording"
+          speechStartTime = Date.now()
+          recorder?.start()
+        }else if (sentenceDetectionState === "silence_detected") {
+          // 意思说话正常间隔
+          sentenceDetectionState = "recording"
+          silenceStartTime = Date.now()
+        }
       }
     }, 200)
 
