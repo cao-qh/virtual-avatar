@@ -102,17 +102,8 @@ function handleAudioData(session: any, data: Buffer | ArrayBuffer): void {
     )} 秒`,
   })
 
-  // 简单日志（每5个数据块打印一次）
-  if (session.audioStats.totalChunks % 5 === 0) {
-    Logger.debug("📦 收到音频数据块", {
-      clientId: session.id.substring(0, 8) + "...",
-      序号: session.audioStats.totalChunks,
-      大小: `${(chunkSize / 1024).toFixed(1)} KB`,
-    })
-  }
-
   // 保存音频数据（可选，根据需求开启）
-  // saveAudioChunk(session, buffer);
+   saveAudioChunk(session, buffer);
 }
 
 /**

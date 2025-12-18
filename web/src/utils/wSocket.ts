@@ -120,6 +120,7 @@ class WebSocketManager {
       data
         .arrayBuffer()
         .then((buffer) => {
+          console.log("buffer：",buffer)
           this.socket!.send(buffer)
           console.log("socket发送音频数据成功")
         })

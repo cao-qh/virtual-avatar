@@ -269,7 +269,7 @@ function processAudioChunk(chunk: Blob): void {
         volumePeak > 0 && currentVolume < volumePeak * 0.4 // 音量下降到峰值的40%
       const shouldConsiderSilence = !isLoud || isVolumeSignificantlyDropped
 
-      console.log(`智能静音检测: ${shouldConsiderSilence}`)
+      // console.log(`智能静音检测: ${shouldConsiderSilence}`)
 
       if (shouldConsiderSilence) {
         // 检测到可能静音（绝对静音或音量显著下降）
