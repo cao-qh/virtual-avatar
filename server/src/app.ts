@@ -108,49 +108,61 @@ function handleAudioData(session: any, data: Buffer | ArrayBuffer): void {
   })
 
   // 保存音频数据（可选，根据需求开启）
-  saveAudioChunk(session, buffer).catch(err => {
+  saveAudioChunk(session, buffer).catch((err) => {
     Logger.error("保存音频数据块时发生错误", {
       clientId: session.id.substring(0, 12) + "...",
-      error: err.message
+      error: err.message,
     })
-  });
+  })
 }
 
 /**
  * 将 WebM 音频 Buffer 转换为 MP3 文件
  */
-async function convertToMp3(inputBuffer: Buffer, outputPath: string): Promise<void> {
+async function convertToMp3(
+  inputBuffer: Buffer,
+  outputPath: string
+): Promise<void> {
   return new Promise((resolve, reject) => {
     // 创建临时文件
     const tempDir = os.tmpdir()
-    const tempFilePath = path.join(tempDir, `temp_${Date.now()}_${Math.random().toString(36).substring(2)}.webm`)
-    
+    const tempFilePath = path.join(
+      tempDir,
+      `temp_${Date.now()}_${Math.random().toString(36).substring(2)}.webm`
+    )
+
     fs.writeFile(tempFilePath, inputBuffer, (err) => {
       if (err) {
         return reject(err)
       }
-      
+
       // 使用 ffmpeg 转换
       ffmpeg(tempFilePath)
-        .audioCodec('libmp3lame')
+        .audioCodec("libmp3lame")
         .audioBitrate(128)
         .audioChannels(1)
         .audioFrequency(44100)
-        .format('mp3')
-        .on('end', () => {
+        .format("mp3")
+        .on("end", () => {
           // 删除临时文件
           fs.unlink(tempFilePath, (unlinkErr) => {
             if (unlinkErr) {
-              Logger.warn('删除临时文件失败', { path: tempFilePath, error: unlinkErr.message })
+              Logger.warn("删除临时文件失败", {
+                path: tempFilePath,
+                error: unlinkErr.message,
+              })
             }
             resolve()
           })
         })
-        .on('error', (ffmpegErr) => {
+        .on("error", (ffmpegErr) => {
           // 删除临时文件
           fs.unlink(tempFilePath, (unlinkErr) => {
             if (unlinkErr) {
-              Logger.warn('删除临时文件失败', { path: tempFilePath, error: unlinkErr.message })
+              Logger.warn("删除临时文件失败", {
+                path: tempFilePath,
+                error: unlinkErr.message,
+              })
             }
           })
           reject(ffmpegErr)
@@ -182,11 +194,11 @@ async function saveAudioChunk(session: any, chunk: Buffer): Promise<void> {
 
     // 转换为 MP3
     await convertToMp3(chunk, filepath)
-    
+
     Logger.debug("音频文件保存为 MP3", {
       clientId: session.id.substring(0, 8) + "...",
       filepath,
-      size: chunk.length
+      size: chunk.length,
     })
   } catch (error: any) {
     Logger.error("保存音频数据块失败", {
@@ -203,20 +215,9 @@ process.on("SIGINT", () => {
   Logger.info("🛑 收到关闭信号，正在清理...")
 
   const activeClients = clientManager.getActiveClientCount()
-  const allClients = clientManager.getAllClients()
-  const totalChunks = allClients.reduce(
-    (sum, c) => sum + c.audioStats.totalChunks,
-    0
-  )
-  const totalBytes = allClients.reduce(
-    (sum, c) => sum + c.audioStats.totalBytes,
-    0
-  )
 
   Logger.info("服务器关闭摘要", {
     活跃客户端数: activeClients,
-    总数据块数: totalChunks,
-    总数据量: `${(totalBytes / 1024 / 1024).toFixed(2)} MB`,
     运行时长: `${Math.round(process.uptime())} 秒`,
   })
 
