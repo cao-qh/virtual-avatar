@@ -2,6 +2,9 @@
 import WebSocket from "ws"
 import fs from "fs"
 import path from "path"
+import os from "os"
+import ffmpeg from "fluent-ffmpeg"
+import ffmpegStatic from "ffmpeg-static"
 import { Logger } from "./utils/logger"
 import { ClientManager } from "./clientManager"
 
@@ -12,6 +15,14 @@ if (!fs.existsSync(recordingsDir)) {
   Logger.info(`创建录音目录`, { path: recordingsDir })
 }
 
+// 设置 ffmpeg 路径
+if (ffmpegStatic) {
+  ffmpeg.setFfmpegPath(ffmpegStatic as string)
+  Logger.debug("FFmpeg 路径已设置", { path: ffmpegStatic })
+} else {
+  Logger.warn("ffmpeg-static 未找到，将使用系统 ffmpeg")
+}
+
 // 初始化客户端管理器
 const clientManager = new ClientManager()
 
@@ -19,12 +30,6 @@ const clientManager = new ClientManager()
 const wss = new WebSocket.Server({
   port: 3000,
   perMessageDeflate: false, // 禁用压缩，避免音频数据损坏
-})
-
-Logger.info("🎤 虚拟人音频服务器启动", {
-  port: 3000,
-  recordingsDir,
-  mode: "纯音频模式（无控制消息）",
 })
 
 wss.on("connection", (ws, req) => {
@@ -103,13 +108,62 @@ function handleAudioData(session: any, data: Buffer | ArrayBuffer): void {
   })
 
   // 保存音频数据（可选，根据需求开启）
-   saveAudioChunk(session, buffer);
+  saveAudioChunk(session, buffer).catch(err => {
+    Logger.error("保存音频数据块时发生错误", {
+      clientId: session.id.substring(0, 12) + "...",
+      error: err.message
+    })
+  });
 }
 
 /**
- * 保存音频数据块（可选功能）
+ * 将 WebM 音频 Buffer 转换为 MP3 文件
  */
-function saveAudioChunk(session: any, chunk: Buffer): void {
+async function convertToMp3(inputBuffer: Buffer, outputPath: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // 创建临时文件
+    const tempDir = os.tmpdir()
+    const tempFilePath = path.join(tempDir, `temp_${Date.now()}_${Math.random().toString(36).substring(2)}.webm`)
+    
+    fs.writeFile(tempFilePath, inputBuffer, (err) => {
+      if (err) {
+        return reject(err)
+      }
+      
+      // 使用 ffmpeg 转换
+      ffmpeg(tempFilePath)
+        .audioCodec('libmp3lame')
+        .audioBitrate(128)
+        .audioChannels(1)
+        .audioFrequency(44100)
+        .format('mp3')
+        .on('end', () => {
+          // 删除临时文件
+          fs.unlink(tempFilePath, (unlinkErr) => {
+            if (unlinkErr) {
+              Logger.warn('删除临时文件失败', { path: tempFilePath, error: unlinkErr.message })
+            }
+            resolve()
+          })
+        })
+        .on('error', (ffmpegErr) => {
+          // 删除临时文件
+          fs.unlink(tempFilePath, (unlinkErr) => {
+            if (unlinkErr) {
+              Logger.warn('删除临时文件失败', { path: tempFilePath, error: unlinkErr.message })
+            }
+          })
+          reject(ffmpegErr)
+        })
+        .save(outputPath)
+    })
+  })
+}
+
+/**
+ * 保存音频数据块为 MP3 格式
+ */
+async function saveAudioChunk(session: any, chunk: Buffer): Promise<void> {
   try {
     // 为每个客户端按日期分目录保存
     const dateStr = new Date().toISOString().split("T")[0]
@@ -123,16 +177,16 @@ function saveAudioChunk(session: any, chunk: Buffer): void {
       fs.mkdirSync(clientDir, { recursive: true })
     }
 
-    const filename = `${Date.now()}_${session.audioStats.totalChunks}.webm`
+    const filename = `${Date.now()}_${session.audioStats.totalChunks}.mp3`
     const filepath = path.join(clientDir, filename)
 
-    fs.writeFile(filepath, chunk, (err) => {
-      if (err) {
-        Logger.error("保存音频文件失败", {
-          clientId: session.id.substring(0, 8) + "...",
-          error: err.message,
-        })
-      }
+    // 转换为 MP3
+    await convertToMp3(chunk, filepath)
+    
+    Logger.debug("音频文件保存为 MP3", {
+      clientId: session.id.substring(0, 8) + "...",
+      filepath,
+      size: chunk.length
     })
   } catch (error: any) {
     Logger.error("保存音频数据块失败", {
