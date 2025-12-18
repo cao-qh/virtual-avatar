@@ -5,6 +5,8 @@ import path from "path"
 import os from "os"
 import ffmpeg from "fluent-ffmpeg"
 import ffmpegStatic from "ffmpeg-static"
+import axios from "axios"
+import FormData from "form-data"
 import { Logger } from "./utils/logger"
 import { ClientManager } from "./clientManager"
 
@@ -41,6 +43,8 @@ wss.on("connection", (ws, req) => {
 
   // 创建客户端会话
   const session = clientManager.createClient(clientId, clientIp)
+  // 将 WebSocket 连接附加到会话
+  ;(session as any).ws = ws
 
   Logger.info("🔌 新客户端连接", {
     clientId: clientId.substring(0, 12) + "...",
@@ -86,123 +90,168 @@ wss.on("connection", (ws, req) => {
 /**
  * 处理音频数据 - 简化版
  */
-function handleAudioData(session: any, data: Buffer | ArrayBuffer): void {
+async function handleAudioData(session: any, data: Buffer | ArrayBuffer) {
   const buffer = data instanceof ArrayBuffer ? Buffer.from(data) : data
   const chunkSize = buffer.length
 
   // 更新统计信息
   clientManager.updateAudioStats(session.id, chunkSize)
 
-  const totalMB = (session.audioStats.totalBytes / 1024 / 1024).toFixed(2)
-  const avgKB = (session.audioStats.averageChunkSize / 1024).toFixed(2)
 
   Logger.info("🎵 音频数据统计", {
     clientId: session.id.substring(0, 12) + "...",
-    数据块数: session.audioStats.totalChunks,
-    总数据量: `${totalMB} MB`,
-    平均块大小: `${avgKB} KB`,
-    频率: `${session.audioStats.chunksPerSecond.toFixed(1)} 块/秒`,
     运行时间: `${Math.round(
       (Date.now() - session.connectedAt.getTime()) / 1000
     )} 秒`,
   })
 
-  // 保存音频数据（可选，根据需求开启）
-  saveAudioChunk(session, buffer).catch((err) => {
-    Logger.error("保存音频数据块时发生错误", {
+  try {
+    // 转换音频为 MP3 Buffer
+    const mp3Buffer = await convertAudioChunkToMp3(session, buffer)
+    if (mp3Buffer && session.ws) {
+      // 发送到 TTS 接口
+      sendMp3BufferToTTS(mp3Buffer, session.id, session.ws).catch(err => {
+        Logger.error("发送到 TTS 失败", {
+          clientId: session.id.substring(0, 12) + "...",
+          error: err.message,
+        })
+      })
+    }
+  } catch (err) {
+    Logger.error("处理音频数据块时发生错误", {
       clientId: session.id.substring(0, 12) + "...",
       error: err.message,
     })
-  })
+  }
 }
 
 /**
- * 将 WebM 音频 Buffer 转换为 MP3 文件
+ * 将 WebM 音频 Buffer 转换为 MP3 Buffer
  */
-async function convertToMp3(
-  inputBuffer: Buffer,
-  outputPath: string
-): Promise<void> {
+async function convertWebmToMp3Buffer(inputBuffer: Buffer): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    // 创建临时文件
     const tempDir = os.tmpdir()
-    const tempFilePath = path.join(
+    const tempWebmPath = path.join(
       tempDir,
       `temp_${Date.now()}_${Math.random().toString(36).substring(2)}.webm`
     )
+    const tempMp3Path = path.join(
+      tempDir,
+      `temp_${Date.now()}_${Math.random().toString(36).substring(2)}.mp3`
+    )
 
-    fs.writeFile(tempFilePath, inputBuffer, (err) => {
+    // 写入临时 WebM 文件
+    fs.writeFile(tempWebmPath, inputBuffer, (err) => {
       if (err) {
         return reject(err)
       }
 
       // 使用 ffmpeg 转换
-      ffmpeg(tempFilePath)
+      ffmpeg(tempWebmPath)
         .audioCodec("libmp3lame")
         .audioBitrate(128)
         .audioChannels(1)
         .audioFrequency(44100)
         .format("mp3")
         .on("end", () => {
-          // 删除临时文件
-          fs.unlink(tempFilePath, (unlinkErr) => {
-            if (unlinkErr) {
-              Logger.warn("删除临时文件失败", {
-                path: tempFilePath,
-                error: unlinkErr.message,
-              })
+          // 读取 MP3 文件内容
+          fs.readFile(tempMp3Path, (readErr, mp3Buffer) => {
+            // 清理临时文件
+            fs.unlink(tempWebmPath, (unlinkErr) => {
+              if (unlinkErr) {
+                Logger.warn("删除临时 WebM 文件失败", {
+                  path: tempWebmPath,
+                  error: unlinkErr.message,
+                })
+              }
+            })
+            fs.unlink(tempMp3Path, (unlinkErr) => {
+              if (unlinkErr) {
+                Logger.warn("删除临时 MP3 文件失败", {
+                  path: tempMp3Path,
+                  error: unlinkErr.message,
+                })
+              }
+            })
+
+            if (readErr) {
+              reject(readErr)
+            } else {
+              resolve(mp3Buffer)
             }
-            resolve()
           })
         })
         .on("error", (ffmpegErr) => {
-          // 删除临时文件
-          fs.unlink(tempFilePath, (unlinkErr) => {
+          // 清理临时文件
+          fs.unlink(tempWebmPath, (unlinkErr) => {
             if (unlinkErr) {
-              Logger.warn("删除临时文件失败", {
-                path: tempFilePath,
+              Logger.warn("删除临时 WebM 文件失败", {
+                path: tempWebmPath,
                 error: unlinkErr.message,
               })
             }
           })
           reject(ffmpegErr)
         })
-        .save(outputPath)
+        .save(tempMp3Path)
     })
   })
 }
 
 /**
- * 保存音频数据块为 MP3 格式
+ * 转换音频数据块为 MP3 Buffer
  */
-async function saveAudioChunk(session: any, chunk: Buffer): Promise<void> {
+async function convertAudioChunkToMp3(session: any, chunk: Buffer): Promise<Buffer | null> {
   try {
-    // 为每个客户端按日期分目录保存
-    const dateStr = new Date().toISOString().split("T")[0]
-    const clientDir = path.join(
-      recordingsDir,
-      session.id.substring(0, 8),
-      dateStr
+    const mp3Buffer = await convertWebmToMp3Buffer(chunk)
+    Logger.debug("音频数据转换为 MP3 Buffer", {
+      clientId: session.id.substring(0, 8) + "...",
+      size: mp3Buffer.length,
+    })
+    return mp3Buffer
+  } catch (error: any) {
+    Logger.error("转换音频数据块失败", {
+      clientId: session.id.substring(0, 8) + "...",
+      error: error.message,
+    })
+    return null
+  }
+}
+
+/**
+ * 发送 MP3 Buffer 到 TTS 语音识别接口，并接收返回的文本发送给客户端
+ */
+async function sendMp3BufferToTTS(mp3Buffer: Buffer, clientId: string, ws: WebSocket): Promise<void> {
+  try {
+    const form = new FormData()
+    // 将 Buffer 作为文件附加
+    form.append('file', mp3Buffer, {
+      filename: 'audio.mp3',
+      contentType: 'audio/mpeg'
+    })
+    form.append('model', 'FunAudioLLM/SenseVoiceSmall')
+
+    const response = await axios.post(
+      'https://api.siliconflow.cn/v1/audio/transcriptions',
+      form,
+      {
+        headers: {
+          ...form.getHeaders(),
+          'Authorization': 'Bearer sk-lmtnyslrfqrrcwkadnrbhhfopohuevcgaeyjmcqrvneouqxn'
+        }
+      }
     )
 
-    if (!fs.existsSync(clientDir)) {
-      fs.mkdirSync(clientDir, { recursive: true })
+    const text = response.data?.text || ''
+    Logger.info('TTS 识别结果', { clientId: clientId.substring(0, 8) + '...', text })
+
+    // 将识别结果发送回客户端
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'transcription', text }))
     }
-
-    const filename = `${Date.now()}_${session.audioStats.totalChunks}.mp3`
-    const filepath = path.join(clientDir, filename)
-
-    // 转换为 MP3
-    await convertToMp3(chunk, filepath)
-
-    Logger.debug("音频文件保存为 MP3", {
-      clientId: session.id.substring(0, 8) + "...",
-      filepath,
-      size: chunk.length,
-    })
   } catch (error: any) {
-    Logger.error("保存音频数据块失败", {
-      clientId: session.id.substring(0, 8) + "...",
+    Logger.error('发送 MP3 Buffer 到 TTS 接口失败', {
+      clientId: clientId.substring(0, 8) + '...',
       error: error.message,
     })
   }
