@@ -121,6 +121,7 @@ class WebSocketManager {
         .arrayBuffer()
         .then((buffer) => {
           this.socket!.send(buffer)
+          console.log("socket发送音频数据成功")
         })
         .catch((error) => {
           console.error("转换音频数据失败:", error)
