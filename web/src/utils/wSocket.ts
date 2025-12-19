@@ -6,6 +6,7 @@ interface WebSocketManagerOptions {
   onClose?: () => void
   onError?: (error: Event) => void
   onReconnect?: (attempt: number) => void
+  onAudioData?: (audioBuffer: ArrayBuffer) => void // 新增：处理二进制音频数据
   maxReconnectAttempts?: number
   reconnectInterval?: number
 }
@@ -76,8 +77,24 @@ class WebSocketManager {
       }
 
       this.socket.onmessage = (event) => {
-        console.log("收到服务器消息:", event.data)
-        // 这里可以处理服务器响应，比如虚拟人的回复
+        console.log("收到消息，类型:", typeof event.data, "构造函数:", event.data.constructor?.name)
+        
+        const handleArrayBuffer = (buffer: ArrayBuffer) => {
+          console.log("收到音频二进制数据，大小:", buffer.byteLength)
+          this.options.onAudioData?.(buffer)
+        }
+
+        if (event.data instanceof ArrayBuffer) {
+          handleArrayBuffer(event.data)
+        } else if (event.data instanceof Blob) {
+          // 将 Blob 转换为 ArrayBuffer
+          event.data.arrayBuffer().then(handleArrayBuffer).catch(err => {
+            console.error("转换 Blob 到 ArrayBuffer 失败:", err)
+          })
+        } else {
+          // 文本消息（目前服务器不再发送文本，但保留处理）
+          console.log("收到服务器文本消息:", event.data)
+        }
       }
 
       this.socket.onclose = () => {
@@ -181,7 +198,8 @@ let defaultManager: WebSocketManager | null = null
  * 创建默认WebSocket连接
  */
 export function createDefaultWebSocket(
-  url: string = "ws://localhost:3000"
+  url: string = "ws://localhost:3000",
+  options: Partial<WebSocketManagerOptions> = {}
 ): WebSocketManager {
   if (defaultManager) {
     console.warn("WebSocket连接已存在，返回现有实例")
@@ -196,6 +214,7 @@ export function createDefaultWebSocket(
     onReconnect: (attempt) => {
       console.log(`第${attempt}次重连尝试`)
     },
+    ...options,
   })
 
   return defaultManager

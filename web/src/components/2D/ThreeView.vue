@@ -82,4 +82,10 @@ onMounted(async () => {
 })
 </script>
 
-<style></style>
+<style scoped>
+#c {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+</style>

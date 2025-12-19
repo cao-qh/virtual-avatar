@@ -53,7 +53,7 @@ wss.on("connection", (ws, req) => {
   })
 
   // 发送简单的连接确认（可选）
-  ws.send(Buffer.from([0x01])) // 发送单个字节作为确认
+  //ws.send(Buffer.from([0x01])) // 发送单个字节作为确认
 
   // 处理消息 - 只处理二进制音频数据
   ws.on("message", (data) => {

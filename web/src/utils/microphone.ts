@@ -24,8 +24,8 @@ let sentenceDetectionState: SentenceDetectionState = "idle"
 // 配置参数
 let sentenceDetectionConfig: SentenceDetectionConfig = {
   silenceThreshold: 18, // 提高阈值，避免环境噪音误判（基于日志分析）
-  silenceDuration: 800, // 适当减少静音时间，提高响应速度
-  minSpeechDuration: 500, // 减少最小语音时长，避免过短的录音
+  silenceDuration: 400, // 适当减少静音时间，提高响应速度
+  minSpeechDuration: 300, // 减少最小语音时长，避免过短的录音
   maxSentenceDuration: 8000, // 减少最大句子时长，避免过长等待
 }
 
