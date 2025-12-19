@@ -109,9 +109,9 @@ async function handleAudioData(session: any, data: Buffer | ArrayBuffer) {
     // 转换音频为 MP3 Buffer
     const mp3Buffer = await convertAudioChunkToMp3(session, buffer)
     if (mp3Buffer && session.ws) {
-      // 发送到 TTS 接口
-      sendMp3BufferToTTS(mp3Buffer, session.id, session.ws).catch(err => {
-        Logger.error("发送到 TTS 失败", {
+      // 处理音频：TTS 识别 → LLM 生成 → 发送给客户端
+      processAudioWithTTSAndLLM(mp3Buffer, session.id, session.ws).catch(err => {
+        Logger.error("处理音频失败", {
           clientId: session.id.substring(0, 12) + "...",
           error: err.message,
         })
@@ -219,19 +219,20 @@ async function convertAudioChunkToMp3(session: any, chunk: Buffer): Promise<Buff
 }
 
 /**
- * 发送 MP3 Buffer 到 TTS 语音识别接口，并接收返回的文本发送给客户端
+ * 处理音频：TTS 识别 → LLM 生成 → 发送给客户端
  */
-async function sendMp3BufferToTTS(mp3Buffer: Buffer, clientId: string, ws: WebSocket): Promise<void> {
+async function processAudioWithTTSAndLLM(mp3Buffer: Buffer, clientId: string, ws: WebSocket): Promise<void> {
+  let ttsText = ''
   try {
+    // 1. TTS 识别
     const form = new FormData()
-    // 将 Buffer 作为文件附加
     form.append('file', mp3Buffer, {
       filename: 'audio.mp3',
       contentType: 'audio/mpeg'
     })
     form.append('model', 'FunAudioLLM/SenseVoiceSmall')
 
-    const response = await axios.post(
+    const ttsResponse = await axios.post(
       'https://api.siliconflow.cn/v1/audio/transcriptions',
       form,
       {
@@ -242,18 +243,70 @@ async function sendMp3BufferToTTS(mp3Buffer: Buffer, clientId: string, ws: WebSo
       }
     )
 
-    const text = response.data?.text || ''
-    Logger.info('TTS 识别结果', { clientId: clientId.substring(0, 8) + '...', text })
+    ttsText = ttsResponse.data?.text || ''
+    Logger.info('TTS 识别结果', { clientId: clientId.substring(0, 8) + '...', text: ttsText })
 
-    // 将识别结果发送回客户端
+    if (!ttsText.trim()) {
+      // 如果识别结果为空，直接返回
+      // if (ws.readyState === WebSocket.OPEN) {
+      //   ws.send(JSON.stringify({ type: 'transcription', text: '' }))
+      // }
+      return
+    }
+
+    // 2. LLM 处理
+    const llmResponse = await axios.post(
+      'https://api.siliconflow.cn/v1/chat/completions',
+      {
+        model: 'THUDM/glm-4-9b-chat',
+        messages: [
+          {
+            role: 'system',
+            content: '你是一个知心好友，虽然话不多，但是充满了温暖。'
+          },
+          {
+            role: 'user',
+            content: ttsText
+          }
+        ],
+        stream: false,
+        max_tokens: 4096,
+        temperature: 0.7,
+        top_p: 0.7,
+        top_k: 50,
+        frequency_penalty: 0.5,
+        n: 1,
+        response_format: { type: 'text' },
+        enable_thinking: false,
+        thinking_budget: 4096,
+        min_p: 0.05,
+        stop: null,
+        tools: []
+      },
+      {
+        headers: {
+          'Authorization': 'Bearer sk-lmtnyslrfqrrcwkadnrbhhfopohuevcgaeyjmcqrvneouqxn',
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+
+    const llmText = llmResponse.data?.choices?.[0]?.message?.content || ''
+    Logger.info('LLM 回复', { clientId: clientId.substring(0, 8) + '...', text: llmText })
+
+    // 3. 发送给客户端
     if (ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'transcription', text }))
+      ws.send(JSON.stringify({ type: 'transcription', text: llmText }))
     }
   } catch (error: any) {
-    Logger.error('发送 MP3 Buffer 到 TTS 接口失败', {
+    Logger.error('处理音频失败', {
       clientId: clientId.substring(0, 8) + '...',
       error: error.message,
     })
+    // 如果 LLM 失败，尝试发送原始 TTS 文本
+    if (ttsText && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'transcription', text: ttsText }))
+    }
   }
 }
 
