@@ -1,5 +1,6 @@
 <template>
   <canvas id="c" ref="c"></canvas>
+  <Loading v-if="!loaded" :progress="loadingProgress"/>
 </template>
 
 <script setup lang='ts'>
@@ -14,7 +15,11 @@ import camera from '@/components/3D/Camera.ts'
 import light from '@/components/3D/Light.ts'
 import globals from "@/utils/globals.js";
 
+import Loading from '@/components/2D/Loading.vue'
+
 const c = ref()
+const loaded = ref(false)
+const loadingProgress = ref(0)
 let mixer: THREE.AnimationMixer | null = null
 
 onMounted(async () => {
@@ -32,8 +37,8 @@ onMounted(async () => {
   controls.update();
 
   const gltfLoader = new GLTFLoader();
-  // gltfLoader.load("/shijianzhou_donghua.glb", (gltf: GLTF) => {
   gltfLoader.load("/girl.glb", (gltf: GLTF) => {
+    loaded.value = true
     const root = gltf.scene;
     console.log("gltf:", gltf)
     scene.add(root);
@@ -43,6 +48,9 @@ onMounted(async () => {
     if (clip) {
       mixer.clipAction(clip).play();
     }
+  },(event)=>{
+    // console.log("加载完成:",event)
+    loadingProgress.value = event.loaded / event.total
   });
 
   /*

@@ -12,7 +12,7 @@
 import { onMounted, ref, onUnmounted } from 'vue'
 import { startRecording, getCurrentVolume, stopRecording } from '@/utils/microphone'
 import { createDefaultWebSocket, closeDefaultWebSocket } from '@/utils/wSocket';
-import ThreeView from '@/components/2D/ThreeView.vue'
+import ThreeView from '@/views/ThreeView.vue'
 
 import { audioPlayer } from './utils/AudioPlayer';
 
@@ -26,6 +26,7 @@ const playAudio = (blob: Blob) => {
 }
 
 onMounted(async () => {
+  return
   console.log("等待WebSocket连接...")
   const wsManager = createDefaultWebSocket("ws://localhost:3000", {
     onAudioData: playAudio

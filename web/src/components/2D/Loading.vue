@@ -1,0 +1,76 @@
+<template>
+  <div id="loading" ref="loadingElement">
+    <div>
+      <div>...loading...</div>
+      <div class="progress">
+        <div id="progressbar" ref="progressbarElement"></div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang='ts'>
+import { ref, watch } from 'vue';
+const progressbarElement = ref();
+
+const props = defineProps<{
+  progress: number;
+}>();
+
+watch(() => props.progress, (progress) => {
+  progressbarElement.value.style.width = `${progress * 100}%`;
+});
+
+</script>
+
+<style scoped>
+#loading {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: xx-large;
+  font-family: sans-serif;
+}
+
+#loading>div>div {
+  padding: 2px;
+}
+
+.progress {
+  width: 50vw;
+  border: 1px solid black;
+}
+
+#progressbar {
+  width: 0;
+  transition: width ease-out .5s;
+  height: 1em;
+  background-color: #888;
+  background-image: linear-gradient(-45deg,
+      rgba(255, 255, 255, .5) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(255, 255, 255, .5) 50%,
+      rgba(255, 255, 255, .5) 75%,
+      transparent 75%,
+      transparent);
+  background-size: 50px 50px;
+  animation: progressanim 2s linear infinite;
+}
+
+@keyframes progressanim {
+  0% {
+    background-position: 50px 50px;
+  }
+
+  100% {
+    background-position: 0 0;
+  }
+}
+</style>
