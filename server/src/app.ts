@@ -319,19 +319,15 @@ async function processAudioWithTTSAndLLM(mp3Buffer: Buffer, clientId: string, ws
           'Authorization': 'Bearer sk-lmtnyslrfqrrcwkadnrbhhfopohuevcgaeyjmcqrvneouqxn',
           'Content-Type': 'application/json'
         },
-        responseType: 'arraybuffer' // 接收二进制数据
+        responseType: 'arraybuffer'
       }
     )
-
-    const audioBuffer = Buffer.from(ttsSpeechResponse.data)
-    Logger.info('TTS 合成完成', {
-      clientId: clientId.substring(0, 8) + '...',
-      size: audioBuffer.length
-    })
+  
+    Logger.info('TTS 合成完成')
 
     // 4. 发送音频二进制数据给客户端
     if (ws.readyState === WebSocket.OPEN) {
-      ws.send(audioBuffer)
+      ws.send(ttsSpeechResponse.data)
     }
   } catch (error: any) {
     Logger.error('处理音频失败', {

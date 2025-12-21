@@ -6,7 +6,7 @@ interface WebSocketManagerOptions {
   onClose?: () => void
   onError?: (error: Event) => void
   onReconnect?: (attempt: number) => void
-  onAudioData?: (audioBuffer: ArrayBuffer) => void // 新增：处理二进制音频数据
+  onAudioData?: (blob: Blob) => void // 新增：处理二进制音频数据
   maxReconnectAttempts?: number
   reconnectInterval?: number
 }
@@ -77,20 +77,16 @@ class WebSocketManager {
       }
 
       this.socket.onmessage = (event) => {
-        console.log("收到消息，类型:", typeof event.data, "构造函数:", event.data.constructor?.name)
-        
-        const handleArrayBuffer = (buffer: ArrayBuffer) => {
-          console.log("收到音频二进制数据，大小:", buffer.byteLength)
-          this.options.onAudioData?.(buffer)
-        }
+        console.log(
+          "收到消息，类型:",
+          typeof event.data,
+          "构造函数:",
+          event.data.constructor?.name
+        )
 
-        if (event.data instanceof ArrayBuffer) {
-          handleArrayBuffer(event.data)
-        } else if (event.data instanceof Blob) {
-          // 将 Blob 转换为 ArrayBuffer
-          event.data.arrayBuffer().then(handleArrayBuffer).catch(err => {
-            console.error("转换 Blob 到 ArrayBuffer 失败:", err)
-          })
+        if (event.data instanceof Blob) {
+          console.log("收到音频 Blob 数据:", event.data)
+          this.options.onAudioData?.(event.data)
         } else {
           // 文本消息（目前服务器不再发送文本，但保留处理）
           console.log("收到服务器文本消息:", event.data)
@@ -137,7 +133,7 @@ class WebSocketManager {
       data
         .arrayBuffer()
         .then((buffer) => {
-          console.log("buffer：",buffer)
+          console.log("buffer：", buffer)
           this.socket!.send(buffer)
           console.log("socket发送音频数据成功")
         })

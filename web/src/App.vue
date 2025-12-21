@@ -3,7 +3,7 @@
     <ThreeView />
     <div style="position: fixed;top: 1rem;left: 1rem;">
       <span>当前音量：{{ volume }}</span>
-    <div >回复音频播放状态：{{ isPlaying }}</div>
+      <div>回复音频播放状态：{{ isPlaying }}</div>
     </div>
   </div>
 </template>
@@ -20,9 +20,8 @@ const volume = ref()
 const isPlaying = ref()
 
 // 播放音频函数
-const playAudio = (audioBuffer: ArrayBuffer) => {
-  console.log('开始播放音频，数据大小:', audioBuffer.byteLength)
-  const blob = new Blob([audioBuffer], { type: 'audio/mpeg' })
+const playAudio = (blob: Blob) => {
+
   audioPlayer.add(blob)
 }
 
@@ -44,7 +43,7 @@ onMounted(async () => {
   setInterval(() => {
     volume.value = getCurrentVolume().toFixed(2)
     audioPlayer.update()
-      isPlaying.value = audioPlayer.getState()
+    isPlaying.value = audioPlayer.getState()
   }, 100)
 })
 

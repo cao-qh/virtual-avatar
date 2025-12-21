@@ -56,7 +56,9 @@ async function requestMicrophonePermission(): Promise<MediaStream> {
  * 开始录音
  * @returns 返回录音对象
  */
-export async function startRecording(onAudioData: (chunk: Blob) => void,): Promise<MediaRecorder> {
+export async function startRecording(
+  onAudioData: (chunk: Blob) => void
+): Promise<MediaRecorder> {
   try {
     // 请求麦克风权限
     const audioStream = await requestMicrophonePermission()
@@ -102,7 +104,10 @@ export async function startRecording(onAudioData: (chunk: Blob) => void,): Promi
         } else if (sentenceDetectionState === "silence_detected") {
           // 检查是否一句话说完了
           const now = Date.now()
-          if (now - silenceStartTime > sentenceDetectionConfig.silenceDuration) {
+          if (
+            now - silenceStartTime >
+            sentenceDetectionConfig.silenceDuration
+          ) {
             // 静音时间超过阈值，认为已结束说话
             sentenceDetectionState = "idle"
             console.log("idle...")
@@ -116,7 +121,7 @@ export async function startRecording(onAudioData: (chunk: Blob) => void,): Promi
           sentenceDetectionState = "recording"
           speechStartTime = Date.now()
           recorder?.start()
-        }else if (sentenceDetectionState === "silence_detected") {
+        } else if (sentenceDetectionState === "silence_detected") {
           // 意思说话正常间隔
           sentenceDetectionState = "recording"
           silenceStartTime = Date.now()
