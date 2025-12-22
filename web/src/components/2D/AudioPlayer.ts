@@ -5,8 +5,10 @@
 class AudioPlayer {
   private audio: HTMLAudioElement
   private currentUrl: string | null = null
-  state: "idle" | "playing" = "idle"
-  queue: Blob[] = []
+  private state: "idle" | "playing" = "idle"
+  onEnded?: () => void
+  onError?: (error: any) => void
+  onPlay?: () => void
 
   constructor() {
     // 只创建一个 Audio 实例
@@ -14,15 +16,17 @@ class AudioPlayer {
 
     // 一次性添加事件监听器
     this.audio.addEventListener("error", (e) => {
-      console.error("音频播放错误:", e, this.audio.error)
+      // console.error("音频播放错误:", e, this.audio.error)
       this.cleanupCurrentUrl()
       this.state = "idle"
+      this.onError?.(this.audio.error)
     })
 
     this.audio.addEventListener("ended", () => {
-      console.log("音频播放结束")
+      // console.log("音频播放结束")
       this.cleanupCurrentUrl()
       this.state = "idle"
+      this.onEnded?.()
     })
 
     // 可选：添加 canplaythrough 事件监听
@@ -44,7 +48,7 @@ class AudioPlayer {
   /**
    * 播放指定的音频 Blob
    */
-  private play(blob: Blob) {
+  play(blob: Blob) {
     // 清理之前的 URL
     this.cleanupCurrentUrl()
 
@@ -57,33 +61,16 @@ class AudioPlayer {
       console.error("播放失败:", error)
       this.cleanupCurrentUrl()
       this.state = "idle"
+      this.onError?.(error)
     })
 
     this.state = "playing"
-  }
-
-   /**
-   * 添加音频到播放队列
-   */
-  add(audio: Blob) {
-    this.queue.push(audio)
+    this.onPlay?.()
   }
 
   getState() {
     return this.state
   }
-
-  /**
-   * 更新播放器状态，播放下一个队列中的音频
-   */
-  update() {
-    if (this.state === "idle" && this.queue.length > 0) {
-      const blob = this.queue.shift()
-      if (blob) {
-        this.play(blob)
-      }
-    }
-  }
 }
 
-export const audioPlayer = new AudioPlayer()
+export default AudioPlayer

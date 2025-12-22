@@ -3,7 +3,7 @@ import * as SkeletonUtils from "three/examples/jsm/utils/SkeletonUtils.js"
 
 import type { Model } from "./ModelLoader"
 import Component from "./Component"
-import globals from "@/utils/globals"
+import Globals from "@/utils/Globals"
 import GameObject from "./GameObject"
 
 class SkinInstance extends Component {
@@ -41,7 +41,7 @@ class SkinInstance extends Component {
     this.actions[animName] = action
   }
   update() {
-    this.mixer.update(globals.deltaTime)
+    this.mixer.update(Globals.deltaTime)
   }
 }
 

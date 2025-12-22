@@ -14,7 +14,8 @@ import { createRenderer, resizeRendererToDisplaySize } from '@/components/3D/Ren
 import scene from '@/components/3D/Scene.ts'
 import camera from '@/components/3D/Camera.ts'
 import light from '@/components/3D/Light.ts'
-import globals from "@/utils/globals.js";
+import Globals from "@/utils/Globals.js";
+import WebSocketManager from '@/utils/WebSocketManager';
 
 import Loading from '@/components/2D/Loading.vue'
 
@@ -31,6 +32,7 @@ onMounted(async () => {
 })
 
 const onModelLoaded = async (model: Model) => {
+  // 关闭loading
   loaded.value = true
   console.log('加载完成:', model)
 
@@ -44,7 +46,7 @@ const onModelLoaded = async (model: Model) => {
 
   // 创建人物
   const gameObject = GameObjectManager.createGameObject(scene, 'player');
-  gameObject.addComponent(Player, model.gltf.scene);
+  Globals.player = gameObject.addComponent(Player, model);
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(0, 0.8, 0);
@@ -55,10 +57,10 @@ const onModelLoaded = async (model: Model) => {
   let then = 0;
   function render(now: number) {
     // convert to seconds
-    globals.time = now * 0.001;
+    Globals.time = now * 0.001;
     // make sure delta time isn't too big.
-    globals.deltaTime = Math.min(globals.time - then, 1 / 20);
-    then = globals.time;
+    Globals.deltaTime = Math.min(Globals.time - then, 1 / 20);
+    then = Globals.time;
 
     // console.log(now)
     if (resizeRendererToDisplaySize()) {
@@ -66,11 +68,18 @@ const onModelLoaded = async (model: Model) => {
       camera.aspect = canvas.clientWidth / canvas.clientHeight;
       camera.updateProjectionMatrix();
     }
+
+    GameObjectManager.update()
+
     renderer.render(scene, camera)
     requestAnimationFrame(render)
   }
 
   requestAnimationFrame(render)
+
+  // 创建webSocket连接
+  const wsManager = new WebSocketManager("ws://localhost:3000");
+  await wsManager.waitForOpen();
 }
 const onModelProgress = (progress: number) => {
   loadingProgress.value = progress
