@@ -1,15 +1,15 @@
-import Player from "@/components/3D/Player"
+import Avatar from "@/components/3D/Avatar"
 
 type GLOBALS = {
   time: number;
   deltaTime: number;
-  player: Player|null;
+  avatar: Avatar|null;
 }
 
 const Globals: GLOBALS = {
   time: 0,
   deltaTime: 0,
-  player: null,
+  avatar: null,
 }
 
 export default Globals

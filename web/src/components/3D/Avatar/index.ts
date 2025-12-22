@@ -1,8 +1,8 @@
-import Component from "./Component"
-import GameObject from "./GameObject"
-import SkinInstance from "./SkinInstance"
-import type { Model } from "./ModelLoader"
-import AudioPlayer from "../2D/AudioPlayer"
+import Component from "../Component"
+import GameObject from "../GameObject"
+import SkinInstance from "../SkinInstance"
+import type { Model } from "../ModelLoader"
+import Mouth from "./Mouth"
 
 class Player extends Component {
   // 玩家角色模型
@@ -11,8 +11,8 @@ class Player extends Component {
   private skinInstance: SkinInstance
   // 角色状态
   private state: "idle" | "talking"
-  // 音频播放器
-  private audioPlayer: AudioPlayer
+  // 嘴巴
+  private mouth: Mouth
 
   constructor(gameObject: GameObject, model: Model) {
     super(gameObject)
@@ -20,9 +20,9 @@ class Player extends Component {
     this.model = model
     this.skinInstance = gameObject.addComponent(SkinInstance, this.model)
     this.skinInstance.setAnimation(this.state)
-    this.audioPlayer = new AudioPlayer()
+    this.mouth = gameObject.addComponent(Mouth)
 
-    this.audioPlayer.onEnded = () => {
+    this.mouth.onEnded = () => {
       this.setState("idle")
     }
   }
@@ -37,7 +37,7 @@ class Player extends Component {
 
   talk(blob: Blob) {
     console.log("开始说话")
-    this.audioPlayer.play(blob)
+    this.mouth.speak(blob)
     this.setState("talking")
   }
   update() {}

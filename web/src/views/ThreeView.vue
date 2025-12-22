@@ -8,7 +8,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 
 import ModelLoader, { type Model } from '@/components/3D/ModelLoader';
 import GameObjectManager from '@/components/3D/GameObjectManager';
-import Player from '@/components/3D/Player.ts'
+import Avatar from '@/components/3D/Avatar'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { createRenderer, resizeRendererToDisplaySize } from '@/components/3D/Renderer.ts'
 import scene from '@/components/3D/Scene.ts'
@@ -25,11 +25,12 @@ const loaded = ref(false)
 const loadingProgress = ref(0)
 
 onMounted(async () => {
-  await ModelLoader.load("/girl.glb")
-  ModelLoader.onLoaded = onModelLoaded
-  ModelLoader.onProgress = onModelProgress
-  ModelLoader.onError = onModelError
-
+  try {
+    const model = await ModelLoader.load("/girl.glb",onModelProgress)
+    onModelLoaded(model)
+  } catch (err) {
+    console.error('模型加载失败:', err)
+  }
 })
 
 onUnmounted(() => {
@@ -51,8 +52,8 @@ const onModelLoaded = async (model: Model) => {
   scene.add(light)
 
   // 创建人物
-  const gameObject = GameObjectManager.createGameObject(scene, 'player');
-  Globals.player = gameObject.addComponent(Player, model);
+  const gameObject = GameObjectManager.createGameObject(scene, 'avatar');
+  Globals.avatar = gameObject.addComponent(Avatar, model);
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(0, 0.8, 0);
@@ -62,7 +63,7 @@ const onModelLoaded = async (model: Model) => {
   // 创建webSocket连接
   await WebSocketManager.waitForOpen();
   WebSocketManager.onAudioData = (blob) => {
-    Globals.player?.talk(blob)
+    Globals.avatar?.talk(blob)
   }
   // 创建麦克风
   Microphone.init()
@@ -97,9 +98,6 @@ const onModelLoaded = async (model: Model) => {
 }
 const onModelProgress = (progress: number) => {
   loadingProgress.value = progress
-}
-const onModelError = (error: any) => {
-  console.error('模型加载失败:', error)
 }
 
 </script>
