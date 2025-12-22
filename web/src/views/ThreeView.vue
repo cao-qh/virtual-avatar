@@ -4,7 +4,7 @@
 </template>
 
 <script setup lang='ts'>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted } from 'vue'
 
 import ModelLoader, { type Model } from '@/components/3D/ModelLoader';
 import GameObjectManager from '@/components/3D/GameObjectManager';
@@ -15,8 +15,6 @@ import scene from '@/components/3D/Scene.ts'
 import camera from '@/components/3D/Camera.ts'
 import light from '@/components/3D/Light.ts'
 import Globals from "@/utils/Globals.js";
-import WebSocketManager from '@/utils/WebSocketManager';
-import Microphone from '@/utils/Microphone';
 
 import Loading from '@/components/2D/Loading.vue'
 
@@ -26,16 +24,11 @@ const loadingProgress = ref(0)
 
 onMounted(async () => {
   try {
-    const model = await ModelLoader.load("/girl.glb",onModelProgress)
+    const model = await ModelLoader.load("/girl.glb", onModelProgress)
     onModelLoaded(model)
   } catch (err) {
     console.error('模型加载失败:', err)
   }
-})
-
-onUnmounted(() => {
-  WebSocketManager.close()
-  Microphone.stop()
 })
 
 const onModelLoaded = async (model: Model) => {
@@ -60,18 +53,6 @@ const onModelLoaded = async (model: Model) => {
   controls.enablePan = false
   controls.update();
 
-  // 创建webSocket连接
-  await WebSocketManager.waitForOpen();
-  WebSocketManager.onAudioData = (blob) => {
-    Globals.avatar?.talk(blob)
-  }
-  // 创建麦克风
-  Microphone.init()
-  Microphone.onAudioData = (blob) => {
-    WebSocketManager.sendAudioData(blob)
-  }
-
-
   let then = 0;
   function render(now: number) {
     // convert to seconds
@@ -88,7 +69,6 @@ const onModelLoaded = async (model: Model) => {
     }
 
     GameObjectManager.update()
-    Microphone.update()
 
     renderer.render(scene, camera)
     requestAnimationFrame(render)

@@ -1,3 +1,6 @@
+import Component from "../Component"
+import GameObject from "../GameObject"
+
 // 一句话检测状态（使用字符串常量代替枚举，因为TypeScript配置了erasableSyntaxOnly）
 type SentenceDetectionState = "idle" | "recording" | "silence_detected"
 
@@ -8,7 +11,7 @@ interface SentenceDetectionConfig {
   maxSentenceDuration: number // 最大句子持续时间（ms）
 }
 
-class Microphone {
+class Ear extends Component {
   // 录音器
   private recorder: MediaRecorder | null = null
   // 音频分析器
@@ -26,10 +29,10 @@ class Microphone {
     maxSentenceDuration: 8000, // 减少最大句子时长，避免过长等待
   }
   // 当获取到音频文件数据时调用
-  onAudioData?: (chunk: Blob) => void
+  onAudioData?: (blob: Blob) => void
 
-  constructor() {
-    //
+  constructor(gameObject: GameObject) {
+    super(gameObject)
   }
 
   /**
@@ -87,10 +90,10 @@ class Microphone {
   }
 
   /**
-   * 开始录音
+   * 开始倾听
    * @returns 返回录音对象
    */
-  async init() {
+  async listen() {
     try {
       // 请求麦克风权限
       const audioStream = await this.requestMicrophonePermission()
@@ -198,4 +201,4 @@ class Microphone {
   }
 }
 
-export default new Microphone()
+export default Ear

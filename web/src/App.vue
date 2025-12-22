@@ -9,12 +9,12 @@
 </template>
 
 <script setup lang='ts'>
-import { ref } from 'vue'
+// import { ref } from 'vue'
 import ThreeView from '@/views/ThreeView.vue'
-import Globals from './utils/Globals';
 
-const volume = ref()
-const isPlaying = ref()
+
+// const volume = ref()
+// const isPlaying = ref()
 
 </script>
 

@@ -1,4 +1,10 @@
-class WebSocketManager {
+import Component from "../Component"
+import GameObject from "../GameObject"
+
+/**
+ * 思维
+ */
+class Thought extends Component {
   private url: string
   private maxReconnectAttempts: number
   private reconnectInterval: number
@@ -9,13 +15,15 @@ class WebSocketManager {
   onClose?: () => void
   onError?: (error: Event) => void
   onReconnect?: (attempt: number) => void
-  onAudioData?: (blob: Blob) => void // 新增：处理二进制音频数据
+  onQuestionEnd?: (blob: Blob) => void // 新增：处理二进制音频数据
 
   constructor(
+    gameObject: GameObject,
     url: string,
     maxReconnectAttempts: number = 5,
     reconnectInterval: number = 3000
   ) {
+    super(gameObject)
     this.url = url
     this.maxReconnectAttempts = maxReconnectAttempts
     this.reconnectInterval = reconnectInterval
@@ -37,7 +45,7 @@ class WebSocketManager {
       this.socket.onmessage = (event) => {
         if (event.data instanceof Blob) {
           console.log("收到音频 Blob 数据:", event.data)
-          this.onAudioData?.(event.data)
+          this.onQuestionEnd?.(event.data)
         } else {
           // 文本消息（目前服务器不再发送文本，但保留处理）
           console.log("收到服务器文本消息:", event.data)
@@ -73,43 +81,6 @@ class WebSocketManager {
     } catch (error) {
       console.error("创建WebSocket连接失败:", error)
     }
-  }
-
-  /**
-   * 等待连接建立
-   * @param timeout 超时时间（毫秒）
-   */
-  waitForOpen(timeout: number = 10000): Promise<void> {
-    return new Promise((resolve, reject) => {
-      // 如果已经连接，立即解决
-      if (this.socket?.readyState === WebSocket.OPEN) {
-        resolve()
-        return
-      }
-
-      // 设置超时
-      const timeoutId = setTimeout(() => {
-        reject(new Error(`连接超时 (${timeout}ms)`))
-      }, timeout)
-
-      // 监听open事件
-      const onOpen = () => {
-        clearTimeout(timeoutId)
-        resolve()
-      }
-
-      // 监听错误或关闭
-      const onErrorOrClose = () => {
-        clearTimeout(timeoutId)
-        reject(new Error("连接失败"))
-      }
-
-      if (this.socket) {
-        this.socket.addEventListener("open", onOpen)
-        this.socket.addEventListener("error", onErrorOrClose)
-        this.socket.addEventListener("close", onErrorOrClose)
-      }
-    })
   }
 
   /**
@@ -175,4 +146,4 @@ class WebSocketManager {
   }
 }
 
-export default new WebSocketManager("ws://localhost:3000")
+export default Thought
