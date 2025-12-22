@@ -19,6 +19,8 @@ class Avatar extends Component {
   private ear: Ear
   // 思考
   private thought: Thought
+  // 动画过渡时间（秒）
+  private animationFadeDuration: number = 0.3
 
   constructor(gameObject: GameObject, model: Model) {
     super(gameObject)
@@ -48,19 +50,46 @@ class Avatar extends Component {
     }
   }
 
+  /**
+   * 设置角色状态（使用平滑动画过渡）
+   * @param state 新状态
+   */
   private setState(state: "idle" | "talking") {
+    // 如果状态没有变化，直接返回
+    if (this.state === state) {
+      return
+    }
+    
     this.state = state
-    this.skinInstance.setAnimation(this.state)
+    // 使用平滑过渡切换动画
+    this.skinInstance.crossfadeTo(this.state, this.animationFadeDuration)
   }
+  
+  /**
+   * 获取当前状态
+   */
   getState() {
     return this.state
   }
+  
+  /**
+   * 设置动画过渡时间
+   * @param duration 过渡时间（秒）
+   */
+  setAnimationFadeDuration(duration: number) {
+    this.animationFadeDuration = duration
+  }
 
+  /**
+   * 开始说话
+   * @param blob 音频数据
+   */
   talk(blob: Blob) {
     console.log("开始说话")
     this.mouth.speak(blob)
     this.setState("talking")
   }
+  
   update() {
     this.ear.update()
   }
