@@ -6,7 +6,7 @@ import Mouth from "./Mouth"
 import Ear from "./Ear"
 import Thought from "./Thought"
 
-class Player extends Component {
+class Avatar extends Component {
   // 玩家角色模型
   private model: Model
   // 玩家皮肤实例
@@ -66,4 +66,4 @@ class Player extends Component {
   }
 }
 
-export default Player
+export default Avatar
