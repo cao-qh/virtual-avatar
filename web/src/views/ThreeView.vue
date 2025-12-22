@@ -5,9 +5,10 @@
 
 <script setup lang='ts'>
 import { ref, onMounted } from 'vue'
-import * as THREE from 'three';
 
 import ModelLoader, { type Model } from '@/components/3D/ModelLoader';
+import GameObjectManager from '@/components/3D/GameObjectManager';
+import Player from '@/components/3D/Player.ts'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { createRenderer, resizeRendererToDisplaySize } from '@/components/3D/Renderer.ts'
 import scene from '@/components/3D/Scene.ts'
@@ -20,7 +21,6 @@ import Loading from '@/components/2D/Loading.vue'
 const c = ref()
 const loaded = ref(false)
 const loadingProgress = ref(0)
-// let mixer: THREE.AnimationMixer | null = null
 
 onMounted(async () => {
   await ModelLoader.load("/girl.glb")
@@ -39,19 +39,17 @@ const onModelLoaded = async (model: Model) => {
     canvas: c.value
   })
 
-  scene.add(model.gltf.scene)
   // 给场景添加灯光
   scene.add(light)
+
+  // 创建人物
+  const gameObject = GameObjectManager.createGameObject(scene, 'player');
+  gameObject.addComponent(Player, model.gltf.scene);
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(0, 0.8, 0);
   controls.enablePan = false
   controls.update();
-
-
-  // renderer.setAnimationLoop(function () {
-  //   mixer?.update(globals.deltaTime)
-  // });
 
 
   let then = 0;
