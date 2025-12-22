@@ -20,7 +20,7 @@ class Microphone {
 
   // 配置参数
   private sentenceDetectionConfig: SentenceDetectionConfig = {
-    silenceThreshold: 18, // 提高阈值，避免环境噪音误判（基于日志分析）
+    silenceThreshold: 20, // 提高阈值，避免环境噪音误判（基于日志分析）
     silenceDuration: 400, // 适当减少静音时间，提高响应速度
     minSpeechDuration: 300, // 减少最小语音时长，避免过短的录音
     maxSentenceDuration: 8000, // 减少最大句子时长，避免过长等待
@@ -103,7 +103,9 @@ class Microphone {
       })
 
       this.recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
+        const now = Date.now()
+
+        if (event.data.size > 0 && now - this.speechStartTime > 900) {
           this.onAudioData?.(event.data)
           // console.log("event.data:", event.data)
           // saveAudioToFile(event.data)
