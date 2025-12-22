@@ -1,13 +1,13 @@
 <template>
   <canvas id="c" ref="c"></canvas>
-  <Loading v-if="!loaded" :progress="loadingProgress"/>
+  <Loading v-if="!loaded" :progress="loadingProgress" />
 </template>
 
 <script setup lang='ts'>
 import { ref, onMounted } from 'vue'
 import * as THREE from 'three';
 
-import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import ModelLoader, { type Model } from '@/components/3D/ModelLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { createRenderer, resizeRendererToDisplaySize } from '@/components/3D/Renderer.ts'
 import scene from '@/components/3D/Scene.ts'
@@ -20,14 +20,26 @@ import Loading from '@/components/2D/Loading.vue'
 const c = ref()
 const loaded = ref(false)
 const loadingProgress = ref(0)
-let mixer: THREE.AnimationMixer | null = null
+// let mixer: THREE.AnimationMixer | null = null
 
 onMounted(async () => {
+  await ModelLoader.load("/girl.glb")
+  ModelLoader.onLoaded = onModelLoaded
+  ModelLoader.onProgress = onModelProgress
+  ModelLoader.onError = onModelError
+
+})
+
+const onModelLoaded = async (model: Model) => {
+  loaded.value = true
+  console.log('加载完成:', model)
+
   const renderer = await createRenderer({
     antialias: true,
     canvas: c.value
   })
 
+  scene.add(model.gltf.scene)
   // 给场景添加灯光
   scene.add(light)
 
@@ -36,36 +48,10 @@ onMounted(async () => {
   controls.enablePan = false
   controls.update();
 
-  const gltfLoader = new GLTFLoader();
-  gltfLoader.load("/girl.glb", (gltf: GLTF) => {
-    loaded.value = true
-    const root = gltf.scene;
-    console.log("gltf:", gltf)
-    scene.add(root);
 
-    mixer = new THREE.AnimationMixer(root);
-    const clip = gltf.animations[0]
-    if (clip) {
-      mixer.clipAction(clip).play();
-    }
-  },(event)=>{
-    // console.log("加载完成:",event)
-    loadingProgress.value = event.loaded / event.total
-  });
-
-  /*
-    const boxWidth = 3;
-    const boxDepth = 3;
-    const geometry = new THREE.PlaneGeometry(boxWidth, boxDepth);
-    const material = new THREE.MeshPhongMaterial({color: 0x44aa88});
-    const plane = new THREE.Mesh(geometry, material);
-    plane.rotation.x = -Math.PI / 2;
-    scene.add(plane);
-    */
-
-  renderer.setAnimationLoop(function () {
-    mixer?.update(globals.deltaTime)
-  });
+  // renderer.setAnimationLoop(function () {
+  //   mixer?.update(globals.deltaTime)
+  // });
 
 
   let then = 0;
@@ -87,7 +73,14 @@ onMounted(async () => {
   }
 
   requestAnimationFrame(render)
-})
+}
+const onModelProgress = (progress: number) => {
+  loadingProgress.value = progress
+}
+const onModelError = (error: any) => {
+  console.error('模型加载失败:', error)
+}
+
 </script>
 
 <style scoped>
