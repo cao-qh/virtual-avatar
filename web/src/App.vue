@@ -9,40 +9,13 @@
 </template>
 
 <script setup lang='ts'>
-import { onMounted, ref, onUnmounted } from 'vue'
-import { startRecording, getCurrentVolume, stopRecording } from '@/utils/microphone'
-// import { createDefaultWebSocket, closeDefaultWebSocket } from '@/utils/wSocket';
+import { ref } from 'vue'
 import ThreeView from '@/views/ThreeView.vue'
 import Globals from './utils/Globals';
 
 const volume = ref()
 const isPlaying = ref()
 
-
-onMounted(async () => {
-
-  return
-  console.log("Globals",Globals.player)
-
-  console.log("等待WebSocket连接...")
-  const wsManager = createDefaultWebSocket("ws://localhost:3000", {
-    onAudioData: Globals.player?.talk
-  })
-
-  await wsManager.waitForOpen(10000)
-  console.log("WebSocket连接已建立")
-
-  // 开启录音
-  await startRecording((sentenceAudio) => {
-    console.log("检测到一句话，发送完整音频到服务器")
-    wsManager.sendAudioData(sentenceAudio)
-  }) as MediaRecorder
-})
-
-onUnmounted(() => {
-  stopRecording()
-  closeDefaultWebSocket()
-})
 </script>
 
 <style scoped></style>

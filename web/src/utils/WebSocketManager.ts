@@ -175,4 +175,4 @@ class WebSocketManager {
   }
 }
 
-export default WebSocketManager
+export default new WebSocketManager("ws://localhost:3000")

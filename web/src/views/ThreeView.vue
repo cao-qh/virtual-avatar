@@ -4,7 +4,7 @@
 </template>
 
 <script setup lang='ts'>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 import ModelLoader, { type Model } from '@/components/3D/ModelLoader';
 import GameObjectManager from '@/components/3D/GameObjectManager';
@@ -16,6 +16,7 @@ import camera from '@/components/3D/Camera.ts'
 import light from '@/components/3D/Light.ts'
 import Globals from "@/utils/Globals.js";
 import WebSocketManager from '@/utils/WebSocketManager';
+import Microphone from '@/utils/Microphone';
 
 import Loading from '@/components/2D/Loading.vue'
 
@@ -29,6 +30,11 @@ onMounted(async () => {
   ModelLoader.onProgress = onModelProgress
   ModelLoader.onError = onModelError
 
+})
+
+onUnmounted(() => {
+  WebSocketManager.close()
+  Microphone.stop()
 })
 
 const onModelLoaded = async (model: Model) => {
@@ -53,6 +59,17 @@ const onModelLoaded = async (model: Model) => {
   controls.enablePan = false
   controls.update();
 
+  // 创建webSocket连接
+  await WebSocketManager.waitForOpen();
+  WebSocketManager.onAudioData = (blob) => {
+    Globals.player?.talk(blob)
+  }
+  // 创建麦克风
+  Microphone.init()
+  Microphone.onAudioData = (blob) => {
+    WebSocketManager.sendAudioData(blob)
+  }
+
 
   let then = 0;
   function render(now: number) {
@@ -70,16 +87,13 @@ const onModelLoaded = async (model: Model) => {
     }
 
     GameObjectManager.update()
+    Microphone.update()
 
     renderer.render(scene, camera)
     requestAnimationFrame(render)
   }
 
   requestAnimationFrame(render)
-
-  // 创建webSocket连接
-  const wsManager = new WebSocketManager("ws://localhost:3000");
-  await wsManager.waitForOpen();
 }
 const onModelProgress = (progress: number) => {
   loadingProgress.value = progress
