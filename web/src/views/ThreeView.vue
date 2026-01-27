@@ -46,10 +46,11 @@ const onModelLoaded = async (model: Model) => {
   loaded.value = true
   console.log('加载完成:', model)
 
-  const renderer =  createRenderer({
+  const renderer = createRenderer({
     antialias: true,
-    canvas: c.value
+    canvas: c.value,
   })
+  
 
   // 给场景添加灯光
   // scene.add(light)
@@ -72,13 +73,17 @@ const onModelLoaded = async (model: Model) => {
 
   let then = 0;
   function render(now: number) {
+
     // convert to seconds
     Globals.time = now * 0.001;
     // make sure delta time isn't too big.
     Globals.deltaTime = Math.min(Globals.time - then, 1 / 20);
     then = Globals.time;
 
-    // console.log(now)
+    //console.log("camer pos:",camera.position)
+    //console.log("controls tar:",controls.target)
+
+    
     if (resizeRendererToDisplaySize()) {
       const canvas = renderer.domElement;
       camera.aspect = canvas.clientWidth / canvas.clientHeight;
@@ -87,6 +92,11 @@ const onModelLoaded = async (model: Model) => {
 
     GameObjectManager.update()
     controls.update();
+
+    // Animate Fans
+    Globals.fans.forEach(fan => {
+      fan.rotation.z += 0.01
+    })
 
     renderer.render(scene, camera)
     requestAnimationFrame(render)

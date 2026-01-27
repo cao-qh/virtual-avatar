@@ -10,7 +10,7 @@ const near = 0.1
 const far = 500
 // PerspectiveCamera透视相机
 const camera = new THREE.PerspectiveCamera(fov, aspect, near, far)
-camera.position.set( 0, 3, 5 );
+camera.position.set(12.432661101448488, 5.11628329283235, 7.516685478272871)
 // camera.rotation.set(3, 3, 3)
 //  camera.lookAt(0, 10, 0)
 

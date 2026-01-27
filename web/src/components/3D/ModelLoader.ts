@@ -3,6 +3,7 @@ import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js"
 import * as THREE from "three"
 
 import { environmentMap } from "./Scene"
+import Globals from "@/utils/Globals"
 
 export type Model = {
   url: string
@@ -90,6 +91,12 @@ class ModelLoader {
                       map: texture,
                     })
                     child.material = material
+
+                    if(child.name.includes('Fan'))
+                    {
+                      Globals.fans.push(child)
+                    }
+
                     if (child.material.map) {
                       child.material.map.minFilter = THREE.LinearFilter
                     }

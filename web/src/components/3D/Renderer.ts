@@ -2,8 +2,11 @@ import * as THREE from "three"
 
 let renderer: THREE.WebGLRenderer | null = null
 
-export   function createRenderer(options: any) {
+export function createRenderer(options: any) {
   renderer = new THREE.WebGLRenderer(options)
+  // 自动适应高DPI屏幕
+  const pixelRatio = Math.min(window.devicePixelRatio, 2) // 限制最大2倍
+  renderer.setPixelRatio(pixelRatio)
   return renderer
 }
 
