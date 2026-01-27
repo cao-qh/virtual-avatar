@@ -1,10 +1,9 @@
-import * as THREE from "three/webgpu"
+import * as THREE from "three"
 
-let renderer: THREE.WebGPURenderer | null = null
+let renderer: THREE.WebGLRenderer | null = null
 
-export async  function createRenderer(options: any) {
-  renderer = new THREE.WebGPURenderer(options)
-  await renderer.init()
+export   function createRenderer(options: any) {
+  renderer = new THREE.WebGLRenderer(options)
   return renderer
 }
 
