@@ -1,6 +1,7 @@
 <template>
   <canvas id="c" ref="c" @mousemove.stop="handleMouseMove" @click="handleClick"></canvas>
   <Loading v-if="!loaded" :progress="loadingProgress" />
+  <Dialog ref="dialog"></Dialog>
 </template>
 
 <script setup lang='ts'>
@@ -20,10 +21,12 @@ import camera from '@/components/3D/Camera.ts'
 import Globals from "@/utils/Globals.js";
 
 import Loading from '@/components/2D/Loading.vue'
+import Dialog from '@/components/2D/Dialog.vue';
 
 const c = ref()
 const loaded = ref(false)
 const loadingProgress = ref(0)
+const dialog = ref()
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -44,9 +47,20 @@ const handleClick = () => {
     const mesh = currentIntersects[0]?.object as THREE.Mesh;
     Object.entries(socialLinks).forEach(([name, url]) => {
       if (mesh.name.includes(name)) {
-       window.open(url, '_blank')
+        window.open(url, '_blank')
       }
     });
+
+    if (mesh.name.includes('ButtenIntro')) {
+        console.log('点击了介绍')
+        dialog.value.open('介绍')
+      } else if (
+        mesh.name.includes('ButtenAbout')
+      ) {
+        dialog.value.open('关于')
+      } else if (mesh.name.includes('ButtenContact')) {
+        dialog.value.open('联系')
+      }
   }
 };
 
