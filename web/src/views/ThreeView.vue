@@ -1,7 +1,10 @@
 <template>
-  <canvas id="c" ref="c" @mousemove.stop="handleMouseMove" @click="handleClick"></canvas>
+  <canvas id="c" ref="c" @mousemove.stop="handleMouseMove" @touchstart.passive="handleTouchStart"
+    @touchend.passive="handleRaycastIntersect" @click.passive="handleRaycastIntersect"></canvas>
   <Loading v-if="!loaded" :progress="loadingProgress" />
-  <Dialog ref="dialog"></Dialog>
+  <Teleport to="body">
+    <Dialog ref="dialog"></Dialog>
+  </Teleport>
 </template>
 
 <script setup lang='ts'>
@@ -42,7 +45,13 @@ const handleMouseMove = (event: any) => {
   pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
 };
 
-const handleClick = () => {
+const handleTouchStart = (event: any) => {
+  // console.log('触摸坐标：', event.touches[0].clientX, event.touches[0].clientY);
+  pointer.x = (event.touches[0].clientX / window.innerWidth) * 2 - 1;
+  pointer.y = -(event.touches[0].clientY / window.innerHeight) * 2 + 1;
+}
+
+const handleRaycastIntersect = () => {
   if (currentIntersects.length > 0) {
     const mesh = currentIntersects[0]?.object as THREE.Mesh;
     Object.entries(socialLinks).forEach(([name, url]) => {
@@ -52,15 +61,15 @@ const handleClick = () => {
     });
 
     if (mesh.name.includes('ButtenIntro')) {
-        console.log('点击了介绍')
-        dialog.value.open('介绍')
-      } else if (
-        mesh.name.includes('ButtenAbout')
-      ) {
-        dialog.value.open('关于')
-      } else if (mesh.name.includes('ButtenContact')) {
-        dialog.value.open('联系')
-      }
+      console.log('点击了介绍')
+      dialog.value.open('介绍')
+    } else if (
+      mesh.name.includes('ButtenAbout')
+    ) {
+      dialog.value.open('关于')
+    } else if (mesh.name.includes('ButtenContact')) {
+      dialog.value.open('联系')
+    }
   }
 };
 
