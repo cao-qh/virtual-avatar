@@ -65,6 +65,18 @@ class ModelLoader {
           if (child instanceof THREE.Mesh) {
             console.log(child.name)
 
+            if (child.name.includes("hover")) {
+              child.userData.initialScale = new THREE.Vector3().copy(
+                child.scale,
+              )
+              child.userData.initialPosition = new THREE.Vector3().copy(
+                child.position,
+              )
+              child.userData.initialRotation = new THREE.Euler().copy(
+                child.rotation,
+              )
+            }
+
             if (child.name.includes("Water")) {
               child.material = new THREE.MeshBasicMaterial({
                 color: 0x558bc8,
@@ -92,12 +104,11 @@ class ModelLoader {
                     })
                     child.material = material
 
-                    if(child.name.includes('Fan'))
-                    {
+                    if (child.name.includes("Fan")) {
+                      console.log("fan:", child)
                       Globals.fans.push(child)
                     }
-                    if(child.name.includes('raycast'))
-                    {
+                    if (child.name.includes("raycast")) {
                       Globals.raycasterObjects.push(child)
                     }
 

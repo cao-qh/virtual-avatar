@@ -4,6 +4,14 @@
   box-sizing: border-box;
 }
 
+:root {
+  --base-pink:#eedfe4;
+  --base-purple:#6e5e9c;
+  --base-light-purple:#e8d9d8;
+  --base-black:#090909;
+  --base-white:#fdfdfd;
+}
+
 html,
 body,
 #app {
