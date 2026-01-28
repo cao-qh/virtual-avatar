@@ -96,6 +96,10 @@ class ModelLoader {
                     {
                       Globals.fans.push(child)
                     }
+                    if(child.name.includes('raycast'))
+                    {
+                      Globals.raycasterObjects.push(child)
+                    }
 
                     if (child.material.map) {
                       child.material.map.minFilter = THREE.LinearFilter

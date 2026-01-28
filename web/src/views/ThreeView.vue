@@ -1,5 +1,5 @@
 <template>
-  <canvas id="c" ref="c"></canvas>
+  <canvas id="c" ref="c" @mousemove.stop="handleMouseMove" @click="handleClick"></canvas>
   <Loading v-if="!loaded" :progress="loadingProgress" />
 </template>
 
@@ -25,6 +25,30 @@ const c = ref()
 const loaded = ref(false)
 const loadingProgress = ref(0)
 
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+let currentIntersects: THREE.Intersection[] = []
+const socialLinks = {
+  Github: 'https://github.com/',
+  Blender: 'https://blender.org/',
+}
+
+const handleMouseMove = (event: any) => {
+  // console.log('鼠标坐标：', event.clientX, event.clientY);
+  pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+  pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+};
+
+const handleClick = () => {
+  if (currentIntersects.length > 0) {
+    const mesh = currentIntersects[0]?.object as THREE.Mesh;
+    Object.entries(socialLinks).forEach(([name, url]) => {
+      if (mesh.name.includes(name)) {
+       window.open(url, '_blank')
+      }
+    });
+  }
+};
 
 onMounted(async () => {
   try {
@@ -50,7 +74,7 @@ const onModelLoaded = async (model: Model) => {
     antialias: true,
     canvas: c.value,
   })
-  
+
 
   // 给场景添加灯光
   // scene.add(light)
@@ -83,7 +107,7 @@ const onModelLoaded = async (model: Model) => {
     //console.log("camer pos:",camera.position)
     //console.log("controls tar:",controls.target)
 
-    
+
     if (resizeRendererToDisplaySize()) {
       const canvas = renderer.domElement;
       camera.aspect = canvas.clientWidth / canvas.clientHeight;
@@ -97,6 +121,29 @@ const onModelLoaded = async (model: Model) => {
     Globals.fans.forEach(fan => {
       fan.rotation.z += 0.01
     })
+
+    // Raycaster
+    raycaster.setFromCamera(pointer, camera);
+    currentIntersects = raycaster.intersectObjects(Globals.raycasterObjects);
+    for (let i = 0; i < currentIntersects.length; i++) {
+      // const intersect = currentIntersects[i];
+      // if (intersect) {
+      //   const mesh = intersect.object as THREE.Mesh;
+      //   const material = mesh.material as THREE.MeshPhysicalMaterial;
+      //   material.color.set(0xff0000);
+      // }
+    }
+
+    if (currentIntersects.length > 0) {
+      const mesh = currentIntersects[0]?.object as THREE.Mesh;
+      if (mesh.name.includes('pointer')) {
+        document.body.style.cursor = 'pointer';
+      } else {
+        document.body.style.cursor = 'default';
+      }
+    } else {
+      document.body.style.cursor = 'default';
+    }
 
     renderer.render(scene, camera)
     requestAnimationFrame(render)
