@@ -17,12 +17,13 @@ class ModelLoader {
   private dracoLoader: DRACOLoader
   private glassMaterial: THREE.MeshPhysicalMaterial
   private videoTexture: THREE.VideoTexture
+  private baseUrl = import.meta.env.BASE_URL
 
   constructor() {
     this.gltfLoader = new GLTFLoader()
     this.textureLoader = new THREE.TextureLoader()
     this.dracoLoader = new DRACOLoader()
-    this.dracoLoader.setDecoderPath("/draco/")
+    this.dracoLoader.setDecoderPath(this.baseUrl+"/draco/")
     this.gltfLoader.setDRACOLoader(this.dracoLoader)
     this.glassMaterial = new THREE.MeshPhysicalMaterial({
       transmission: 1,
@@ -38,7 +39,7 @@ class ModelLoader {
     })
 
     const videoElement = document.createElement("video")
-    videoElement.src = "/videos/bizhi.mp4"
+    videoElement.src = this.baseUrl+"/videos/bizhi.mp4"
     videoElement.loop = true
     videoElement.muted = true
     videoElement.playsInline = true

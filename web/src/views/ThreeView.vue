@@ -30,6 +30,7 @@ const c = ref()
 const loaded = ref(false)
 const loadingProgress = ref(0)
 const dialog = ref()
+const baseUrl= import.meta.env.BASE_URL
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -78,12 +79,12 @@ const handleRaycastIntersect = () => {
 
 onMounted(async () => {
   try {
-    const model = await ModelLoader.load("/models/home.glb", onModelProgress, {
-      Wrapper: '/textures/room/Wrapper Baking.webp',
-      Wall: '/textures/room/Wall Baking.webp',
-      TableCabinet: '/textures/room/Table Cabinet Baking.webp',
-      OnWall: '/textures/room/On Wall Baking.webp',
-      GroundObject: '/textures/room/Ground Obj Baking.webp',
+    const model = await ModelLoader.load(baseUrl+"/models/home.glb", onModelProgress, {
+      Wrapper: baseUrl+'/textures/room/Wrapper Baking.webp',
+      Wall: baseUrl+'/textures/room/Wall Baking.webp',
+      TableCabinet: baseUrl+'/textures/room/Table Cabinet Baking.webp',
+      OnWall: baseUrl+'/textures/room/On Wall Baking.webp',
+      GroundObject: baseUrl+'/textures/room/Ground Obj Baking.webp',
     })
     onModelLoaded(model)
   } catch (err) {
@@ -119,7 +120,7 @@ const onModelLoaded = async (model: Model) => {
   const controls = new OrbitControls(camera, renderer.domElement);
   // controls.maxTargetRadius =0.5
   controls.minDistance = 5;
-  controls.maxDistance = 30;
+  controls.maxDistance = 20;
   controls.minPolarAngle = 0;
   controls.maxPolarAngle = Math.PI / 2;
   controls.minAzimuthAngle =0 ;
