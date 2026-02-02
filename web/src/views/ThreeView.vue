@@ -18,7 +18,7 @@ import GameObjectManager from '@/components/3D/GameObjectManager';
 // import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { OrbitControls } from '@/utils/OrbitControls.js';
 import { createRenderer, resizeRendererToDisplaySize } from '@/components/3D/Renderer.ts'
-import scene from '@/components/3D/Scene.ts'
+import scene, { environmentMap } from '@/components/3D/Scene.ts'
 import camera from '@/components/3D/Camera.ts'
 // import light from '@/components/3D/Light.ts'
 import Globals from "@/utils/Globals.js";
@@ -30,17 +30,28 @@ const c = ref()
 const loaded = ref(false)
 const loadingProgress = ref(0)
 const dialog = ref()
-const baseUrl= import.meta.env.BASE_URL
+const baseUrl = import.meta.env.BASE_URL
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 let currentIntersects: THREE.Intersection[] = []
 let currentHoveredObject: THREE.Object3D | null = null;
 
+const textures: Record<string, string> = {
+  Wrapper: baseUrl + '/textures/room/Wrapper Baking.webp',
+  Wall: baseUrl + '/textures/room/Wall Baking.webp',
+  TableCabinet: baseUrl + '/textures/room/Table Cabinet Baking.webp',
+  OnWall: baseUrl + '/textures/room/On Wall Baking.webp',
+  GroundObject: baseUrl + '/textures/room/Ground Obj Baking.webp',
+  Photo: baseUrl + '/textures/room/Photo.webp',
+}
+
 const socialLinks = {
   Github: 'https://github.com/',
   Blender: 'https://blender.org/',
 }
+
+const IntroAnimaObj: Record<string, THREE.Object3D> = {}
 
 const handleMouseMove = (event: any) => {
   // console.log('鼠标坐标：', event.clientX, event.clientY);
@@ -79,13 +90,7 @@ const handleRaycastIntersect = () => {
 
 onMounted(async () => {
   try {
-    const model = await ModelLoader.load(baseUrl+"/models/home.glb", onModelProgress, {
-      Wrapper: baseUrl+'/textures/room/Wrapper Baking.webp',
-      Wall: baseUrl+'/textures/room/Wall Baking.webp',
-      TableCabinet: baseUrl+'/textures/room/Table Cabinet Baking.webp',
-      OnWall: baseUrl+'/textures/room/On Wall Baking.webp',
-      GroundObject: baseUrl+'/textures/room/Ground Obj Baking.webp',
-    })
+    const model = await ModelLoader.load(baseUrl + "/models/home.glb", onModelProgress)
     onModelLoaded(model)
   } catch (err) {
     console.error('模型加载失败:', err)
@@ -97,6 +102,127 @@ const onModelLoaded = async (model: Model) => {
   loaded.value = true
   console.log('加载完成:', model)
 
+  const textureLoader = new THREE.TextureLoader()
+
+  const videoElement = document.createElement("video")
+  videoElement.src = baseUrl + "/videos/bizhi.mp4"
+  videoElement.loop = true
+  videoElement.muted = true
+  videoElement.playsInline = true
+  videoElement.autoplay = true
+  videoElement.play()
+  const videoTexture = new THREE.VideoTexture(videoElement)
+  videoTexture.colorSpace = THREE.SRGBColorSpace
+  videoTexture.flipY = false
+
+  // 加载纹理贴图
+  model.gltf.scene.traverse((child) => {
+    if (child instanceof THREE.Mesh) {
+      console.log(child.name)
+
+      if (child.name.includes("Wood01")) {
+        IntroAnimaObj['Wood01'] = child
+        child.scale.set(0, 1, 0)
+      }
+      if (child.name.includes("Wood02")) {
+        IntroAnimaObj['Wood02'] = child
+        child.scale.set(0, 0, 0)
+      }
+      if (child.name.includes("ButtenAbout")) {
+        IntroAnimaObj['ButtenAbout'] = child
+        child.scale.set(0, 0, 0)
+      }
+      if (child.name.includes("ButtenContact")) {
+        IntroAnimaObj['ButtenContact'] = child
+        child.scale.set(0, 0, 0)
+      }
+      if (child.name.includes("ButtenIntro")) {
+        IntroAnimaObj['ButtenIntro'] = child
+        child.scale.set(0, 0, 0)
+      }
+      if (child.name.includes("MilkTea")) {
+        IntroAnimaObj['MilkTea'] = child
+        child.scale.set(0, 0, 0)
+      }
+      if (child.name.includes("Github")) {
+        IntroAnimaObj['Github'] = child
+        child.scale.set(0, 0, 0)
+      }
+      if (child.name.includes("Blender")) {
+        IntroAnimaObj['Blender'] = child
+        child.scale.set(0, 0, 0)
+      }
+
+
+      if (child.name.includes("hover")) {
+        child.userData.initialScale = new THREE.Vector3().copy(
+          child.scale,
+        )
+        child.userData.initialPosition = new THREE.Vector3().copy(
+          child.position,
+        )
+        child.userData.initialRotation = new THREE.Euler().copy(
+          child.rotation,
+        )
+      }
+
+      if (child.name.includes("Water")) {
+        child.material = new THREE.MeshBasicMaterial({
+          color: 0x558bc8,
+          transparent: true,
+          opacity: 0.66,
+          depthWrite: false,
+        })
+      } else if (child.name.includes("Glass")) {
+        child.material = new THREE.MeshPhysicalMaterial({
+          transmission: 1,
+          opacity: 1,
+          metalness: 0,
+          roughness: 0,
+          ior: 1.5,
+          thickness: 0.01,
+          specularIntensity: 1,
+          envMap: environmentMap,
+          envMapIntensity: 1,
+          depthWrite: false,
+        })
+      } else if (child.name.includes("Screen")) {
+        child.material = new THREE.MeshBasicMaterial({
+          map: videoTexture,
+        })
+      } else {
+        Object.keys(textures).forEach((key) => {
+          //console.log('key:',key)
+          if (child.name.includes(key)) {
+            const texturePath = textures[key]
+            if (texturePath) {
+              const texture = textureLoader.load(texturePath)
+              texture.flipY = false
+              texture.colorSpace = THREE.SRGBColorSpace
+              const material = new THREE.MeshBasicMaterial({
+                map: texture,
+              })
+              child.material = material
+
+              if (child.name.includes("Fan")) {
+                console.log("fan:", child)
+                Globals.fans.push(child)
+              }
+              if (child.name.includes("raycast")) {
+                Globals.raycasterObjects.push(child)
+              }
+
+              if (child.material.map) {
+                child.material.map.minFilter = THREE.LinearFilter
+              }
+            }
+          }
+        })
+      }
+    }
+  })
+
+
   const renderer = createRenderer({
     antialias: true,
     canvas: c.value,
@@ -107,6 +233,9 @@ const onModelLoaded = async (model: Model) => {
   // scene.add(light)
 
   scene.add(model.gltf.scene)
+
+  // 添加入场动画
+  playIntroAnimation()
 
   // 创建人物
   // const gameObject = GameObjectManager.createGameObject(scene, 'avatar');
@@ -123,8 +252,8 @@ const onModelLoaded = async (model: Model) => {
   controls.maxDistance = 20;
   controls.minPolarAngle = 0;
   controls.maxPolarAngle = Math.PI / 2;
-  controls.minAzimuthAngle =0 ;
-  controls.maxAzimuthAngle = Math.PI /2;
+  controls.minAzimuthAngle = 0;
+  controls.maxAzimuthAngle = Math.PI / 2;
   controls.target.set(0, 3, 0);
   // controls.enablePan = false
   controls.enableDamping = true
@@ -132,10 +261,8 @@ const onModelLoaded = async (model: Model) => {
 
   function playHoverAnimation(object: THREE.Object3D | null, isHovering: boolean) {
 
-   
-
     if (object == null) return;
-     
+
     gsap.killTweensOf(object.scale);
     gsap.killTweensOf(object.rotation);
     gsap.killTweensOf(object.position);
@@ -169,7 +296,13 @@ const onModelLoaded = async (model: Model) => {
         ease: "bounce.out(1.8)",
       })
     }
+  }
 
+  function playIntroAnimation() {
+    const t1 = gsap.timeline({
+      duration: 0.8,
+      ease: "back.out(1.8)"
+    })
   }
 
 
@@ -246,6 +379,7 @@ const onModelLoaded = async (model: Model) => {
 
   requestAnimationFrame(render)
 }
+
 const onModelProgress = (progress: number) => {
   loadingProgress.value = progress
 }
