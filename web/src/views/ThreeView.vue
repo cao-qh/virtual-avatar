@@ -51,7 +51,7 @@ const socialLinks = {
   Blender: 'https://blender.org/',
 }
 
-const IntroAnimaObj: Record<string, THREE.Object3D> = {}
+const introAnimaObj: Record<string, THREE.Object3D> = {}
 
 const handleMouseMove = (event: any) => {
   // console.log('鼠标坐标：', event.clientX, event.clientY);
@@ -117,53 +117,53 @@ const onModelLoaded = async (model: Model) => {
 
   // 加载纹理贴图
   model.gltf.scene.traverse((child) => {
+
+    if (child.name.includes("hover")) {
+      child.userData.initialScale = new THREE.Vector3().copy(
+        child.scale,
+      )
+      child.userData.initialPosition = new THREE.Vector3().copy(
+        child.position,
+      )
+      child.userData.initialRotation = new THREE.Euler().copy(
+        child.rotation,
+      )
+    }
+
     if (child instanceof THREE.Mesh) {
       console.log(child.name)
 
       if (child.name.includes("Wood01")) {
-        IntroAnimaObj['Wood01'] = child
+        introAnimaObj['Wood01'] = child
         child.scale.set(0, 1, 0)
       }
       if (child.name.includes("Wood02")) {
-        IntroAnimaObj['Wood02'] = child
+        introAnimaObj['Wood02'] = child
         child.scale.set(0, 0, 0)
       }
       if (child.name.includes("ButtenAbout")) {
-        IntroAnimaObj['ButtenAbout'] = child
+        introAnimaObj['ButtenAbout'] = child
         child.scale.set(0, 0, 0)
       }
       if (child.name.includes("ButtenContact")) {
-        IntroAnimaObj['ButtenContact'] = child
+        introAnimaObj['ButtenContact'] = child
         child.scale.set(0, 0, 0)
       }
       if (child.name.includes("ButtenIntro")) {
-        IntroAnimaObj['ButtenIntro'] = child
+        introAnimaObj['ButtenIntro'] = child
         child.scale.set(0, 0, 0)
       }
       if (child.name.includes("MilkTea")) {
-        IntroAnimaObj['MilkTea'] = child
+        introAnimaObj['MilkTea'] = child
         child.scale.set(0, 0, 0)
       }
       if (child.name.includes("Github")) {
-        IntroAnimaObj['Github'] = child
+        introAnimaObj['Github'] = child
         child.scale.set(0, 0, 0)
       }
       if (child.name.includes("Blender")) {
-        IntroAnimaObj['Blender'] = child
+        introAnimaObj['Blender'] = child
         child.scale.set(0, 0, 0)
-      }
-
-
-      if (child.name.includes("hover")) {
-        child.userData.initialScale = new THREE.Vector3().copy(
-          child.scale,
-        )
-        child.userData.initialPosition = new THREE.Vector3().copy(
-          child.position,
-        )
-        child.userData.initialRotation = new THREE.Euler().copy(
-          child.rotation,
-        )
       }
 
       if (child.name.includes("Water")) {
@@ -300,9 +300,69 @@ const onModelLoaded = async (model: Model) => {
 
   function playIntroAnimation() {
     const t1 = gsap.timeline({
-      duration: 0.8,
-      ease: "back.out(1.8)"
+      defaults: {
+        duration: 0.8,
+        ease: "back.out(1.8)"
+      }
     })
+
+
+    if (introAnimaObj.Wood01
+      && introAnimaObj.Wood02
+      && introAnimaObj.ButtenAbout
+      && introAnimaObj.ButtenContact
+      && introAnimaObj.ButtenIntro) {
+      t1.to(introAnimaObj.Wood01.scale, {
+        x: 1,
+        z: 1,
+      }).to(introAnimaObj.Wood02.scale, {
+        x: 1,
+        y: 1,
+        z: 1,
+      }, "-=0.6").to(introAnimaObj.ButtenIntro.scale, {
+        x: 1,
+        y: 1,
+        z: 1,
+      },"-=0.6").to(introAnimaObj.ButtenAbout.scale, {
+        x: 1,
+        y: 1,
+        z: 1,
+      },"-=0.6").to(introAnimaObj.ButtenContact.scale, {
+        x: 1,
+        y: 1,
+        z: 1,
+      },"-=0.6")
+    }
+
+    const t2 = gsap.timeline({
+      defaults: {
+        duration: 0.8,
+        ease: "back.out(1.8)"
+      }
+    })
+
+    t2.timeScale(0.8)
+
+
+    if (introAnimaObj.MilkTea
+      && introAnimaObj.Github
+      && introAnimaObj.Blender
+     ) {
+      t1.to(introAnimaObj.MilkTea.scale, {
+        x: 1,
+        y: 1,
+        z: 1,
+      }).to(introAnimaObj.Github.scale, {
+        x: 1,
+        y: 1,
+        z: 1,
+      }, "-=0.6").to(introAnimaObj.Blender.scale, {
+        x: 1,
+        y: 1,
+        z: 1,
+      },"-=0.6")
+    }
+
   }
 
 
