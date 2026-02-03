@@ -12,7 +12,7 @@ class Avatar extends Component {
   // 玩家皮肤实例
   private skinInstance: SkinInstance
   // 角色状态
-  private state: "idle" | "talking"
+  private state: "idel" | "talking"
   // 嘴巴
   private mouth: Mouth
   // 耳朵
@@ -24,7 +24,7 @@ class Avatar extends Component {
 
   constructor(gameObject: GameObject, model: Model) {
     super(gameObject)
-    this.state = "idle"
+    this.state = "idel"
     this.model = model
     this.skinInstance = gameObject.addComponent(SkinInstance, this.model)
     this.skinInstance.setAnimation(this.state)
@@ -36,7 +36,7 @@ class Avatar extends Component {
     this.thought = gameObject.addComponent(Thought,"ws://127.0.0.1:3000")
 
     this.mouth.onEnded = () => {
-      this.setState("idle")
+      this.setState("idel")
     }
 
     // 当听到问题，进行撕开
@@ -54,7 +54,7 @@ class Avatar extends Component {
    * 设置角色状态（使用平滑动画过渡）
    * @param state 新状态
    */
-  private setState(state: "idle" | "talking") {
+  private setState(state: "idel" | "talking") {
     // 如果状态没有变化，直接返回
     if (this.state === state) {
       return

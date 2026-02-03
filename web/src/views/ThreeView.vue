@@ -5,6 +5,26 @@
   <Teleport to="body">
     <Dialog ref="dialog"></Dialog>
   </Teleport>
+  
+  <!-- 语音状态指示器 -->
+  <div v-if="loaded" class="voice-status-indicator">
+    <div class="status-item">
+      <span class="status-label">麦克风:</span>
+      <span class="status-value" :class="microphoneStatusClass">{{ microphoneStatusText }}</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">服务器:</span>
+      <span class="status-value" :class="serverStatusClass">{{ serverStatusText }}</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">角色状态:</span>
+      <span class="status-value" :class="avatarStatusClass">{{ avatarStatusText }}</span>
+    </div>
+    <div v-if="isRecording" class="recording-indicator">
+      <div class="pulse"></div>
+      <span>正在录音...</span>
+    </div>
+  </div>
 </template>
 
 <script setup lang='ts'>
@@ -14,7 +34,7 @@ import { gsap } from 'gsap'
 
 import ModelLoader, { type Model } from '@/components/3D/ModelLoader';
 import GameObjectManager from '@/components/3D/GameObjectManager';
-// import Avatar from '@/components/3D/Avatar'
+import Avatar from '@/components/3D/Avatar'
 // import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { OrbitControls } from '@/utils/OrbitControls.js';
 import { createRenderer, resizeRendererToDisplaySize } from '@/components/3D/Renderer.ts'
@@ -33,9 +53,71 @@ const loadingProgress = ref(0)
 const dialog = ref()
 const baseUrl = import.meta.env.BASE_URL
 
+// 语音状态管理
+const microphoneStatus = ref<'idle' | 'requesting' | 'granted' | 'denied'>('idle')
+const serverStatus = ref<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected')
+const avatarStatus = ref<'idle' | 'talking' | 'listening'>('idle')
+const isRecording = ref(false)
+
 // 进度管理
 const textureProgress = ref(0)  // 纹理加载进度 0-1
 const modelProgress = ref(0)    // 模型加载进度 0-1
+
+// 计算状态文本和类
+const microphoneStatusText = computed(() => {
+  switch (microphoneStatus.value) {
+    case 'idle': return '待机'
+    case 'requesting': return '请求中...'
+    case 'granted': return '已授权'
+    case 'denied': return '已拒绝'
+    default: return '未知'
+  }
+})
+
+const microphoneStatusClass = computed(() => {
+  switch (microphoneStatus.value) {
+    case 'granted': return 'status-granted'
+    case 'denied': return 'status-denied'
+    case 'requesting': return 'status-requesting'
+    default: return 'status-idle'
+  }
+})
+
+const serverStatusText = computed(() => {
+  switch (serverStatus.value) {
+    case 'disconnected': return '未连接'
+    case 'connecting': return '连接中...'
+    case 'connected': return '已连接'
+    case 'error': return '连接错误'
+    default: return '未知'
+  }
+})
+
+const serverStatusClass = computed(() => {
+  switch (serverStatus.value) {
+    case 'connected': return 'status-connected'
+    case 'error': return 'status-error'
+    case 'connecting': return 'status-connecting'
+    default: return 'status-disconnected'
+  }
+})
+
+const avatarStatusText = computed(() => {
+  switch (avatarStatus.value) {
+    case 'idle': return '待机'
+    case 'talking': return '说话中'
+    case 'listening': return '聆听中'
+    default: return '未知'
+  }
+})
+
+const avatarStatusClass = computed(() => {
+  switch (avatarStatus.value) {
+    case 'talking': return 'status-talking'
+    case 'listening': return 'status-listening'
+    default: return 'status-idle'
+  }
+})
 
 // 计算总进度：纹理占40%，模型占60%
 const totalProgress = computed(() => {
@@ -491,15 +573,27 @@ const loadAvatarModel = async (avatarPosition: THREE.Object3D | null) => {
       }
     )
     
-    console.log('角色模型加载完成，开始应用材质...',avatarModel)
+    console.log('角色模型加载完成，开始应用材质...', avatarModel)
     
     // 应用烘焙贴图到角色
     applyAvatarTextures(avatarModel)
     
-    // 放置角色到指定位置
-    placeAvatarInScene(avatarModel, avatarPosition)
+    // 创建Avatar游戏对象
+    const avatarGameObject = GameObjectManager.createGameObject(scene, 'avatar')
+    Globals.avatar = avatarGameObject.addComponent(Avatar, avatarModel)
     
-    console.log('角色加载和放置完成')
+    // 放置角色到指定位置
+    if (avatarPosition) {
+      avatarGameObject.transform.position.copy(avatarPosition.position)
+      avatarGameObject.transform.rotation.copy(avatarPosition.rotation)
+      console.log('角色已放置在avatar_position位置')
+    } else {
+      // 如果没有找到avatar_position，使用默认位置
+      avatarGameObject.transform.position.set(0, 0, 0)
+      console.log('未找到avatar_position，使用默认位置(0,0,0)')
+    }
+    
+    console.log('Avatar组件创建完成')
     
   } catch (error) {
     console.error('角色加载失败:', error)
@@ -550,26 +644,6 @@ const applyAvatarTextures = (avatarModel: Model) => {
   })
 }
 
-/**
- * 将角色放置在场景中的指定位置
- */
-const placeAvatarInScene = (avatarModel: Model, avatarPosition: THREE.Object3D | null) => {
-  if (avatarPosition) {
-    // 使用avatar_position的位置、旋转和缩放
-    avatarModel.gltf.scene.position.copy(avatarPosition.position)
-    avatarModel.gltf.scene.rotation.copy(avatarPosition.rotation)
-    console.log('角色已放置在avatar_position位置')
-  } else {
-    // 如果没有找到avatar_position，使用默认位置
-    avatarModel.gltf.scene.position.set(0, 0, 0)
-    console.log('未找到avatar_position，使用默认位置(0,0,0)')
-  }
-  
-  // 添加到场景
-  scene.add(avatarModel.gltf.scene)
-  console.log('角色已添加到场景')
-}
-
 const onModelProgress = (progress: number) => {
   modelProgress.value = progress
   console.log(`模型加载进度: ${(progress * 100).toFixed(1)}%`)
@@ -582,5 +656,119 @@ const onModelProgress = (progress: number) => {
   width: 100%;
   height: 100%;
   display: block;
+}
+
+/* 语音状态指示器样式 */
+.voice-status-indicator {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 15px;
+  border-radius: 10px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  z-index: 1000;
+  min-width: 200px;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.status-item:last-child {
+  margin-bottom: 0;
+}
+
+.status-label {
+  font-weight: bold;
+  margin-right: 10px;
+  color: #ccc;
+}
+
+.status-value {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* 状态颜色 */
+.status-granted, .status-connected {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.status-denied, .status-error {
+  background-color: #f44336;
+  color: white;
+}
+
+.status-requesting, .status-connecting {
+  background-color: #FF9800;
+  color: white;
+}
+
+.status-idle, .status-disconnected {
+  background-color: #9E9E9E;
+  color: white;
+}
+
+.status-talking {
+  background-color: #2196F3;
+  color: white;
+  animation: pulse 1.5s infinite;
+}
+
+.status-listening {
+  background-color: #FF9800;
+  color: white;
+  animation: pulse 1s infinite;
+}
+
+/* 录音指示器 */
+.recording-indicator {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+  padding: 8px;
+  background: rgba(244, 67, 54, 0.2);
+  border-radius: 6px;
+  border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.recording-indicator span {
+  margin-left: 8px;
+  font-weight: bold;
+  color: #ff6b6b;
+}
+
+.pulse {
+  width: 12px;
+  height: 12px;
+  background-color: #f44336;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0.7;
+  }
 }
 </style>
