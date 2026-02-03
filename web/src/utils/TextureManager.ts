@@ -5,10 +5,15 @@ export class TextureManager {
   private loadingManager: THREE.LoadingManager
   private textures: Map<string, THREE.Texture> = new Map()
   private loadingPromises: Map<string, Promise<THREE.Texture>> = new Map()
+  private onProgress?: (progress: number) => void
   
   constructor(loadingManager?: THREE.LoadingManager) {
     this.loadingManager = loadingManager || new THREE.LoadingManager()
     this.textureLoader = new THREE.TextureLoader(this.loadingManager)
+  }
+  
+  setProgressCallback(callback: (progress: number) => void): void {
+    this.onProgress = callback
   }
   
   async preloadTexture(key: string, url: string): Promise<THREE.Texture> {
@@ -44,10 +49,21 @@ export class TextureManager {
   }
   
   async preloadTextures(textureMap: Record<string, string>): Promise<void> {
-    const promises = Object.entries(textureMap).map(([key, url]) => 
-      this.preloadTexture(key, url)
-    )
-    await Promise.all(promises)
+    const entries = Object.entries(textureMap)
+    const total = entries.length
+    
+    for (let i = 0; i < total; i++) {
+      const entry = entries[i]
+      if (!entry) continue
+      
+      const [key, url] = entry
+      await this.preloadTexture(key, url)
+      
+      // 报告进度
+      if (this.onProgress) {
+        this.onProgress((i + 1) / total)
+      }
+    }
   }
   
   getTexture(key: string): THREE.Texture | undefined {

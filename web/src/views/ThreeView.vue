@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang='ts'>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import * as THREE from "three"
 import { gsap } from 'gsap'
 
@@ -32,6 +32,20 @@ const loaded = ref(false)
 const loadingProgress = ref(0)
 const dialog = ref()
 const baseUrl = import.meta.env.BASE_URL
+
+// 进度管理
+const textureProgress = ref(0)  // 纹理加载进度 0-1
+const modelProgress = ref(0)    // 模型加载进度 0-1
+
+// 计算总进度：纹理占40%，模型占60%
+const totalProgress = computed(() => {
+  return textureProgress.value * 0.4 + modelProgress.value * 0.6
+})
+
+// 监听总进度变化，更新 loadingProgress
+watch(totalProgress, (newProgress) => {
+  loadingProgress.value = newProgress
+})
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -95,6 +109,13 @@ onMounted(async () => {
   try {
     // 创建纹理管理器并预加载所有纹理
     textureManager = new TextureManager()
+    
+    // 设置纹理加载进度回调
+    textureManager.setProgressCallback((progress: number) => {
+      textureProgress.value = progress
+      console.log(`纹理加载进度: ${(progress * 100).toFixed(1)}%`)
+    })
+    
     console.log('开始预加载纹理...')
     await textureManager.preloadTextures(textures)
     console.log('纹理预加载完成')
@@ -449,7 +470,8 @@ const onModelLoaded = async (model: Model) => {
 }
 
 const onModelProgress = (progress: number) => {
-  loadingProgress.value = progress
+  modelProgress.value = progress
+  console.log(`模型加载进度: ${(progress * 100).toFixed(1)}%`)
 }
 
 </script>
