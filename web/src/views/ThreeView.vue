@@ -22,6 +22,7 @@ import scene, { environmentMap } from '@/components/3D/Scene.ts'
 import camera from '@/components/3D/Camera.ts'
 // import light from '@/components/3D/Light.ts'
 import Globals from "@/utils/Globals.js";
+import { TextureManager } from '@/utils/TextureManager.ts';
 
 import Loading from '@/components/2D/Loading.vue'
 import Dialog from '@/components/2D/Dialog.vue';
@@ -52,7 +53,7 @@ const socialLinks = {
 }
 
 const introAnimaObj: Record<string, THREE.Object3D> = {}
-const textureLoader = new THREE.TextureLoader()
+let textureManager: TextureManager
 
 
 const handleMouseMove = (event: any) => {
@@ -92,10 +93,17 @@ const handleRaycastIntersect = () => {
 
 onMounted(async () => {
   try {
+    // 创建纹理管理器并预加载所有纹理
+    textureManager = new TextureManager()
+    console.log('开始预加载纹理...')
+    await textureManager.preloadTextures(textures)
+    console.log('纹理预加载完成')
+    
+    // 加载模型
     const model = await ModelLoader.load(baseUrl + "/models/home.glb", onModelProgress)
     onModelLoaded(model)
   } catch (err) {
-    console.error('模型加载失败:', err)
+    console.error('加载失败:', err)
   }
 })
 
@@ -191,17 +199,10 @@ const onModelLoaded = async (model: Model) => {
         Object.keys(textures).forEach((key) => {
           //console.log('key:',key)
           if (child.name.includes(key)) {
-            const texturePath = textures[key]
-            if (texturePath) {
-              const texture = textureLoader.load(texturePath)
-              texture.flipY = false
-              texture.colorSpace = THREE.SRGBColorSpace
-              const material = new THREE.MeshBasicMaterial({
-                map: texture,
-              })
+            try {
+              const material = textureManager.createMaterial(key)
               child.material = material
               console.log(`${child.name} 已创建纹理材质`)
-
 
               if (child.name.includes("Fan")) {
                 console.log("fan:", child)
@@ -214,6 +215,8 @@ const onModelLoaded = async (model: Model) => {
               if (child.material.map) {
                 child.material.map.minFilter = THREE.LinearFilter
               }
+            } catch (error) {
+              console.error(`为 ${child.name} 创建材质失败:`, error)
             }
           }
         })
