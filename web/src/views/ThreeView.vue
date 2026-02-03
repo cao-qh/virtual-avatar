@@ -491,7 +491,7 @@ const loadAvatarModel = async (avatarPosition: THREE.Object3D | null) => {
       }
     )
     
-    console.log('角色模型加载完成，开始应用材质...')
+    console.log('角色模型加载完成，开始应用材质...',avatarModel)
     
     // 应用烘焙贴图到角色
     applyAvatarTextures(avatarModel)
