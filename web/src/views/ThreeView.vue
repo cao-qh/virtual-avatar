@@ -22,7 +22,7 @@ import scene, { environmentMap } from '@/components/3D/Scene.ts'
 import camera from '@/components/3D/Camera.ts'
 // import light from '@/components/3D/Light.ts'
 import Globals from "@/utils/Globals.js";
-import { TextureManager } from '@/utils/TextureManager.ts';
+import { TextureManager } from '@/components/3D/TextureManager.ts';
 
 import Loading from '@/components/2D/Loading.vue'
 import Dialog from '@/components/2D/Dialog.vue';
@@ -116,9 +116,9 @@ onMounted(async () => {
       console.log(`纹理加载进度: ${(progress * 100).toFixed(1)}%`)
     })
     
-    console.log('开始预加载纹理...')
+    // console.log('开始预加载纹理...')
     await textureManager.preloadTextures(textures)
-    console.log('纹理预加载完成')
+    // console.log('纹理预加载完成')
     
     // 加载模型
     const model = await ModelLoader.load(baseUrl + "/models/home.glb", onModelProgress)
@@ -143,6 +143,8 @@ const onModelLoaded = async (model: Model) => {
 
   // 加载纹理贴图
   model.gltf.scene.traverse((child) => {
+      console.log(child.name)
+
 
     if (child.name.includes("hover")) {
       child.userData.initialScale = new THREE.Vector3().copy(
@@ -157,7 +159,6 @@ const onModelLoaded = async (model: Model) => {
     }
 
     if (child instanceof THREE.Mesh) {
-      console.log(child.name)
 
       if (child.name.includes("Wood01")) {
         introAnimaObj['Wood01'] = child
@@ -223,10 +224,9 @@ const onModelLoaded = async (model: Model) => {
             try {
               const material = textureManager.createMaterial(key)
               child.material = material
-              console.log(`${child.name} 已创建纹理材质`)
+              // console.log(`${child.name} 已创建纹理材质`)
 
               if (child.name.includes("Fan")) {
-                console.log("fan:", child)
                 Globals.fans.push(child)
               }
               if (child.name.includes("raycast")) {
@@ -257,7 +257,7 @@ const onModelLoaded = async (model: Model) => {
   // scene.add(light)
 
    scene.add(model.gltf.scene)
-   console.log('已经加载了模型')
+  //  console.log('已经加载了模型')
 
   // 添加入场动画
   playIntroAnimation()
@@ -266,13 +266,7 @@ const onModelLoaded = async (model: Model) => {
   // const gameObject = GameObjectManager.createGameObject(scene, 'avatar');
   // Globals.avatar = gameObject.addComponent(Avatar, model);
 
-  // const geometry = new THREE.BoxGeometry(1, 1, 1);
-  // const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-  // const cube = new THREE.Mesh(geometry, material);
-  // scene.add(cube);
-
   const controls = new OrbitControls(camera, renderer.domElement);
-  // controls.maxTargetRadius =0.5
   controls.minDistance = 5;
   controls.maxDistance = 20;
   controls.minPolarAngle = 0;
