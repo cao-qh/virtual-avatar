@@ -262,7 +262,7 @@ async function processAudioWithTTSAndLLM(mp3Buffer: Buffer, clientId: string, ws
         messages: [
           {
             role: 'system',
-            content: '你是一个知心好友，虽然话不多，但是充满了温暖。'
+            content: '你是一个知心好友，虽然话不多，但是充满了温暖。只会说汉语和英语，默认说汉语。'
           },
           {
             role: 'user',
