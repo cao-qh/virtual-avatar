@@ -19,8 +19,6 @@ class ModelLoader {
     this.dracoLoader = new DRACOLoader()
     this.dracoLoader.setDecoderPath(this.baseUrl+"/draco/")
     this.gltfLoader.setDRACOLoader(this.dracoLoader)
-
-   
   }
 
   async load(

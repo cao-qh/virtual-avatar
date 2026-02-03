@@ -52,6 +52,8 @@ const socialLinks = {
 }
 
 const introAnimaObj: Record<string, THREE.Object3D> = {}
+const textureLoader = new THREE.TextureLoader()
+
 
 const handleMouseMove = (event: any) => {
   // console.log('鼠标坐标：', event.clientX, event.clientY);
@@ -98,12 +100,7 @@ onMounted(async () => {
 })
 
 const onModelLoaded = async (model: Model) => {
-  // 关闭loading
-  loaded.value = true
-  console.log('加载完成:', model)
-
-  const textureLoader = new THREE.TextureLoader()
-
+  
   const videoElement = document.createElement("video")
   videoElement.src = baseUrl + "/videos/bizhi.mp4"
   videoElement.loop = true
@@ -203,6 +200,8 @@ const onModelLoaded = async (model: Model) => {
                 map: texture,
               })
               child.material = material
+              console.log(`${child.name} 已创建纹理材质`)
+
 
               if (child.name.includes("Fan")) {
                 console.log("fan:", child)
@@ -220,6 +219,7 @@ const onModelLoaded = async (model: Model) => {
         })
       }
     }
+
   })
 
 
@@ -232,7 +232,8 @@ const onModelLoaded = async (model: Model) => {
   // 给场景添加灯光
   // scene.add(light)
 
-  scene.add(model.gltf.scene)
+   scene.add(model.gltf.scene)
+   console.log('已经加载了模型')
 
   // 添加入场动画
   playIntroAnimation()
@@ -438,6 +439,10 @@ const onModelLoaded = async (model: Model) => {
   }
 
   requestAnimationFrame(render)
+
+  // 关闭loading
+  loaded.value = true
+  console.log('加载完成:', model)
 }
 
 const onModelProgress = (progress: number) => {
