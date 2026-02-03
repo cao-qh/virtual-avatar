@@ -59,6 +59,7 @@ const textures: Record<string, string> = {
   OnWall: baseUrl + '/textures/room/On Wall Baking.webp',
   GroundObject: baseUrl + '/textures/room/Ground Obj Baking.webp',
   Photo: baseUrl + '/textures/room/Photo.webp',
+  Avatar: baseUrl + '/textures/avatar/Avatar_Baking.webp',
 }
 
 const socialLinks = {
@@ -259,8 +260,20 @@ const onModelLoaded = async (model: Model) => {
    scene.add(model.gltf.scene)
   //  console.log('已经加载了模型')
 
+  // 查找avatar_position空物体
+  let avatarPosition: THREE.Object3D | null = null
+  model.gltf.scene.traverse((child) => {
+    if (child.name === 'avatar_position') {
+      avatarPosition = child
+      console.log('找到avatar_position:', child.position, child.rotation, child.scale)
+    }
+  })
+
   // 添加入场动画
   playIntroAnimation()
+
+  // 加载角色模型
+  loadAvatarModel(avatarPosition)
 
   // 创建人物
   // const gameObject = GameObjectManager.createGameObject(scene, 'avatar');
@@ -461,6 +474,100 @@ const onModelLoaded = async (model: Model) => {
   // 关闭loading
   loaded.value = true
   console.log('加载完成:', model)
+}
+
+/**
+ * 加载角色模型
+ */
+const loadAvatarModel = async (avatarPosition: THREE.Object3D | null) => {
+  try {
+    console.log('开始加载角色模型...')
+    
+    // 加载角色模型
+    const avatarModel = await ModelLoader.load(
+      baseUrl + "/models/avatar.glb",
+      (progress) => {
+        console.log(`角色模型加载进度: ${(progress * 100).toFixed(1)}%`)
+      }
+    )
+    
+    console.log('角色模型加载完成，开始应用材质...')
+    
+    // 应用烘焙贴图到角色
+    applyAvatarTextures(avatarModel)
+    
+    // 放置角色到指定位置
+    placeAvatarInScene(avatarModel, avatarPosition)
+    
+    console.log('角色加载和放置完成')
+    
+  } catch (error) {
+    console.error('角色加载失败:', error)
+  }
+}
+
+/**
+ * 应用烘焙贴图材质到角色模型
+ */
+const applyAvatarTextures = (avatarModel: Model) => {
+  // 获取角色纹理
+  const avatarTexture = textureManager.getTexture('Avatar')
+  if (!avatarTexture) {
+    console.error('角色纹理未加载')
+    return
+  }
+  
+  // 遍历角色模型的所有网格
+  avatarModel.gltf.scene.traverse((child) => {
+    if (child instanceof THREE.Mesh) {
+      console.log(`处理角色网格: ${child.name}`)
+      
+      // 创建材质并应用烘焙贴图
+      const material = new THREE.MeshBasicMaterial({
+        map: avatarTexture,
+        //side: THREE.DoubleSide, // 确保两面都渲染
+      })
+      
+      child.material = material
+      
+      // 特殊处理：眼镜材质
+      if (child.name.includes('Glass') || child.name.includes('glasses')) {
+        console.log(`检测到眼镜材质: ${child.name}`)
+        child.material = new THREE.MeshPhysicalMaterial({
+          transmission: 1,
+          opacity: 1,
+          metalness: 0,
+          roughness: 0,
+          ior: 1.5,
+          thickness: 0.01,
+          specularIntensity: 1,
+          envMap: environmentMap,
+          envMapIntensity: 1,
+          depthWrite: false,
+        })
+      }
+    }
+  })
+}
+
+/**
+ * 将角色放置在场景中的指定位置
+ */
+const placeAvatarInScene = (avatarModel: Model, avatarPosition: THREE.Object3D | null) => {
+  if (avatarPosition) {
+    // 使用avatar_position的位置、旋转和缩放
+    avatarModel.gltf.scene.position.copy(avatarPosition.position)
+    avatarModel.gltf.scene.rotation.copy(avatarPosition.rotation)
+    console.log('角色已放置在avatar_position位置')
+  } else {
+    // 如果没有找到avatar_position，使用默认位置
+    avatarModel.gltf.scene.position.set(0, 0, 0)
+    console.log('未找到avatar_position，使用默认位置(0,0,0)')
+  }
+  
+  // 添加到场景
+  scene.add(avatarModel.gltf.scene)
+  console.log('角色已添加到场景')
 }
 
 const onModelProgress = (progress: number) => {
