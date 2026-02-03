@@ -1,7 +1,7 @@
 <template>
   <div id="loading" ref="loadingElement">
     <div>
-      <div>...loading...</div>
+      <div>...加载中...</div>
       <div class="progress">
         <div id="progressbar" ref="progressbarElement"></div>
       </div>
