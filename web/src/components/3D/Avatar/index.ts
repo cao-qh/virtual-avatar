@@ -8,8 +8,6 @@ import Ear from "@/components/3D/Avatar/Ear"
 import Thought from "@/components/3D/Avatar/Thought"
 
 class Avatar extends Component {
-  // 玩家角色模型
-  private model: Model
   // 玩家皮肤实例
   private skinInstance: SkinInstance
   // 角色状态
@@ -22,15 +20,21 @@ class Avatar extends Component {
   private thought: Thought
   // 动画过渡时间（秒）
   private animationFadeDuration: number = 0.3
-  // 位置
-  private postion: THREE.Object3D
+  
 
-  constructor(gameObject: GameObject, model: Model, postion: THREE.Object3D) {
+  constructor(
+    gameObject: GameObject,
+    model: Model,
+    texture: THREE.Texture,
+    postion: THREE.Object3D,
+    environmentMap: THREE.CubeTexture,
+  ) {
     super(gameObject)
+    this.addMaterial(model, texture,environmentMap)
     this.state = "idel"
-    this.model = model
-    this.postion = postion
-    this.skinInstance = gameObject.addComponent(SkinInstance, this.model)
+    this.gameObject.transform.position.copy(postion.position)
+    this.gameObject.transform.rotation.copy(postion.rotation)
+    this.skinInstance = gameObject.addComponent(SkinInstance, model)
     this.skinInstance.setAnimation(this.state)
     this.mouth = gameObject.addComponent(Mouth)
     this.ear = gameObject.addComponent(Ear)
@@ -52,6 +56,37 @@ class Avatar extends Component {
     this.thought.onQuestionEnd = (blob) => {
       this.talk(blob)
     }
+  }
+
+  // 添加材质
+  addMaterial(model: Model, texture: THREE.Texture,environmentMap: THREE.CubeTexture) {
+    model.gltf.scene.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        // 创建材质并应用烘焙贴图
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+        })
+
+        child.material = material
+
+        // 特殊处理：眼镜材质
+        if (child.name.includes("glasses")) {
+          // console.log(`检测到眼镜材质: ${child.name}`)
+          child.material = new THREE.MeshPhysicalMaterial({
+            transmission: 1,
+            opacity: 1,
+            metalness: 0,
+            roughness: 0,
+            ior: 1.5,
+            thickness: 0.01,
+            specularIntensity: 1,
+            envMap: environmentMap,
+            envMapIntensity: 1,
+            depthWrite: false,
+          })
+        }
+      }
+    })
   }
 
   /**

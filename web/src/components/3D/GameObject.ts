@@ -19,7 +19,7 @@ class GameObject {
     this.transform = new THREE.Object3D();
     parent.add(this.transform);
   }
-  addComponent(ComponentType:any, ...args:any):Component {
+  addComponent(ComponentType:any, ...args:any):any {
     const component = new ComponentType(this, ...args);
     this.components.push(component);
     return component;

@@ -1,6 +1,6 @@
 import * as THREE from "three"
 
-import ModelManager, { type Model } from "@/components/3D/ModelManager"
+import ModelManager from "@/components/3D/ModelManager"
 import TextureManager from "@/components/3D/TextureManager.ts"
 
 import {
@@ -70,7 +70,7 @@ class GameManager {
 
   init(onLoad: () => void, onProgress?: (progress: number) => void) {
     this.loadingManager.onLoad = onLoad
-    this.loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
+    this.loadingManager.onProgress = (_, itemsLoaded, itemsTotal) => {
       //  console.log(`Loading file: ${url}`)
       onProgress?.(itemsLoaded / itemsTotal)
     }
@@ -112,7 +112,7 @@ class GameManager {
       this.sceneManager.getScene(),
       Avatar.name,
     )
-    avatarObject.addComponent(Avatar, this.modelManager.getModel(Avatar.name),homeComponent.getAvatarPosition())
+    avatarObject.addComponent(Avatar, this.modelManager.getModel(Avatar.name),this.textureManager.getTexture(Avatar.name),homeComponent.getAvatarPosition())
 
     // 给射线管理器添加可被射线检测的物体
     this.raycasterManager.addRaycasterObject(homeComponent.getRaycasterObjects())
