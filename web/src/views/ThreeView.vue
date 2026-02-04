@@ -6,25 +6,20 @@
     <Dialog ref="dialog"></Dialog>
   </Teleport>
   <Status v-if="loaded" />
-  
+
 </template>
 
 <script setup lang='ts'>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import * as THREE from "three"
 import { gsap } from 'gsap'
 
-import ModelLoader, { type Model } from '@/components/3D/ModelLoader';
-import GameObjectManager from '@/components/3D/GameObjectManager';
+import GameManager from '@/components/3D/GameManager';
 import Avatar from '@/components/3D/Avatar'
-// import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { OrbitControls } from '@/utils/OrbitControls.js';
-import { createRenderer, resizeRendererToDisplaySize } from '@/components/3D/Renderer.ts'
-import scene, { environmentMap } from '@/components/3D/Scene.ts'
-import camera from '@/components/3D/Camera.ts'
+
 // import light from '@/components/3D/Light.ts'
 import Globals from "@/utils/Globals.js";
-import { TextureManager } from '@/components/3D/TextureManager.ts';
+
 
 import Loading from '@/components/2D/Loading.vue'
 import Dialog from '@/components/2D/Dialog.vue';
@@ -36,35 +31,52 @@ const loadingProgress = ref(0)
 const dialog = ref()
 const baseUrl = import.meta.env.BASE_URL
 
-// 进度管理
-const textureProgress = ref(0)  // 纹理加载进度 0-1
-const modelProgress = ref(0)    // 模型加载进度 0-1
+onMounted(() => {
+
+  // 创建纹理管理器并预加载所有纹理
+  // textureManager = new TextureManager()
+
+  // 设置纹理加载进度回调
+  // textureManager.setProgressCallback((progress: number) => {
+  //   textureProgress.value = progress
+  //   console.log(`纹理加载进度: ${(progress * 100).toFixed(1)}%`)
+  // })
+
+  // console.log('开始预加载纹理...')
+  // await textureManager.preloadTextures(textures)
+  // console.log('纹理预加载完成')
 
 
-// 计算总进度：纹理占40%，模型占60%
-const totalProgress = computed(() => {
-  return textureProgress.value * 0.4 + modelProgress.value * 0.6
+  // onModelLoaded(model)
+
+  const gameManager = new GameManager(c.value)
+
+  gameManager.init(() => {
+    console.log('资源加载完成')
+    loaded.value = true
+    gameManager.start()
+  }, (progress: number) => {
+    loadingProgress.value = progress
+  })
+
+
+  function render(){
+    gameManager.update()
+    requestAnimationFrame(render)
+  }
+
+  requestAnimationFrame(render)
 })
 
-// 监听总进度变化，更新 loadingProgress
-watch(totalProgress, (newProgress) => {
-  loadingProgress.value = newProgress
-})
+
+
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 let currentIntersects: THREE.Intersection[] = []
 let currentHoveredObject: THREE.Object3D | null = null;
 
-const textures: Record<string, string> = {
-  Wrapper: baseUrl + '/textures/room/Wrapper Baking.webp',
-  Wall: baseUrl + '/textures/room/Wall Baking.webp',
-  TableCabinet: baseUrl + '/textures/room/Table Cabinet Baking.webp',
-  OnWall: baseUrl + '/textures/room/On Wall Baking.webp',
-  GroundObject: baseUrl + '/textures/room/Ground Obj Baking.webp',
-  Photo: baseUrl + '/textures/room/Photo.webp',
-  Avatar: baseUrl + '/textures/avatar/Avatar_Baking.webp',
-}
+
 
 const socialLinks = {
   Github: 'https://github.com/',
@@ -72,7 +84,7 @@ const socialLinks = {
 }
 
 const introAnimaObj: Record<string, THREE.Object3D> = {}
-let textureManager: TextureManager
+// let textureManager: TextureManager
 
 
 const handleMouseMove = (event: any) => {
@@ -110,45 +122,14 @@ const handleRaycastIntersect = () => {
   }
 };
 
-onMounted(async () => {
-  try {
-    // 创建纹理管理器并预加载所有纹理
-    textureManager = new TextureManager()
-    
-    // 设置纹理加载进度回调
-    textureManager.setProgressCallback((progress: number) => {
-      textureProgress.value = progress
-      console.log(`纹理加载进度: ${(progress * 100).toFixed(1)}%`)
-    })
-    
-    // console.log('开始预加载纹理...')
-    await textureManager.preloadTextures(textures)
-    // console.log('纹理预加载完成')
-    
-    // 加载模型
-    const model = await ModelLoader.load(baseUrl + "/models/home.glb", onModelProgress)
-    onModelLoaded(model)
-  } catch (err) {
-    console.error('加载失败:', err)
-  }
-})
 
 const onModelLoaded = async (model: Model) => {
-  
-  const videoElement = document.createElement("video")
-  videoElement.src = baseUrl + "/videos/bizhi.mp4"
-  videoElement.loop = true
-  videoElement.muted = true
-  videoElement.playsInline = true
-  videoElement.autoplay = true
-  videoElement.play()
-  const videoTexture = new THREE.VideoTexture(videoElement)
-  videoTexture.colorSpace = THREE.SRGBColorSpace
-  videoTexture.flipY = false
+
+
 
   // 加载纹理贴图
   model.gltf.scene.traverse((child) => {
-      console.log(child.name)
+    // console.log(child.name)
 
 
     if (child.name.includes("hover")) {
@@ -198,70 +179,16 @@ const onModelLoaded = async (model: Model) => {
         child.scale.set(0, 0, 0)
       }
 
-      if (child.name.includes("Water")) {
-        child.material = new THREE.MeshBasicMaterial({
-          color: 0x558bc8,
-          transparent: true,
-          opacity: 0.66,
-          depthWrite: false,
-        })
-      } else if (child.name.includes("Glass")) {
-        child.material = new THREE.MeshPhysicalMaterial({
-          transmission: 1,
-          opacity: 1,
-          metalness: 0,
-          roughness: 0,
-          ior: 1.5,
-          thickness: 0.01,
-          specularIntensity: 1,
-          envMap: environmentMap,
-          envMapIntensity: 1,
-          depthWrite: false,
-        })
-      } else if (child.name.includes("Screen")) {
-        child.material = new THREE.MeshBasicMaterial({
-          map: videoTexture,
-        })
-      } else {
-        Object.keys(textures).forEach((key) => {
-          //console.log('key:',key)
-          if (child.name.includes(key)) {
-            try {
-              const material = textureManager.createMaterial(key)
-              child.material = material
-              // console.log(`${child.name} 已创建纹理材质`)
 
-              if (child.name.includes("Fan")) {
-                Globals.fans.push(child)
-              }
-              if (child.name.includes("raycast")) {
-                Globals.raycasterObjects.push(child)
-              }
-
-              if (child.material.map) {
-                child.material.map.minFilter = THREE.LinearFilter
-              }
-            } catch (error) {
-              console.error(`为 ${child.name} 创建材质失败:`, error)
-            }
-          }
-        })
-      }
     }
 
-  })
-
-
-  const renderer = createRenderer({
-    antialias: true,
-    canvas: c.value,
   })
 
 
   // 给场景添加灯光
   // scene.add(light)
 
-   scene.add(model.gltf.scene)
+  scene.add(model.gltf.scene)
   //  console.log('已经加载了模型')
 
   // 查找avatar_position空物体
@@ -269,7 +196,7 @@ const onModelLoaded = async (model: Model) => {
   model.gltf.scene.traverse((child) => {
     if (child.name === 'avatar_position') {
       avatarPosition = child
-      console.log('找到avatar_position:', child.position, child.rotation, child.scale)
+      // console.log('找到avatar_position:', child.position, child.rotation, child.scale)
     }
   })
 
@@ -277,22 +204,13 @@ const onModelLoaded = async (model: Model) => {
   playIntroAnimation()
 
   // 加载角色模型
-  loadAvatarModel(avatarPosition)
+  // loadAvatarModel(avatarPosition)
 
   // 创建人物
   // const gameObject = GameObjectManager.createGameObject(scene, 'avatar');
   // Globals.avatar = gameObject.addComponent(Avatar, model);
 
-  const controls = new OrbitControls(camera, renderer.domElement);
-  controls.minDistance = 5;
-  controls.maxDistance = 20;
-  controls.minPolarAngle = 0;
-  controls.maxPolarAngle = Math.PI / 2;
-  controls.minAzimuthAngle = 0;
-  controls.maxAzimuthAngle = Math.PI / 2;
-  controls.target.set(0, 3, 0);
-  // controls.enablePan = false
-  controls.enableDamping = true
+  
 
 
   function playHoverAnimation(object: THREE.Object3D | null, isHovering: boolean) {
@@ -359,15 +277,15 @@ const onModelLoaded = async (model: Model) => {
         x: 1,
         y: 1,
         z: 1,
-      },"-=0.6").to(introAnimaObj.ButtenAbout.scale, {
+      }, "-=0.6").to(introAnimaObj.ButtenAbout.scale, {
         x: 1,
         y: 1,
         z: 1,
-      },"-=0.6").to(introAnimaObj.ButtenContact.scale, {
+      }, "-=0.6").to(introAnimaObj.ButtenContact.scale, {
         x: 1,
         y: 1,
         z: 1,
-      },"-=0.6")
+      }, "-=0.6")
     }
 
     const t2 = gsap.timeline({
@@ -383,7 +301,7 @@ const onModelLoaded = async (model: Model) => {
     if (introAnimaObj.MilkTea
       && introAnimaObj.Github
       && introAnimaObj.Blender
-     ) {
+    ) {
       t1.to(introAnimaObj.MilkTea.scale, {
         x: 1,
         y: 1,
@@ -396,7 +314,7 @@ const onModelLoaded = async (model: Model) => {
         x: 1,
         y: 1,
         z: 1,
-      },"-=0.6")
+      }, "-=0.6")
     }
 
   }
@@ -415,14 +333,9 @@ const onModelLoaded = async (model: Model) => {
     //console.log("controls tar:",controls.target)
 
 
-    if (resizeRendererToDisplaySize()) {
-      const canvas = renderer.domElement;
-      camera.aspect = canvas.clientWidth / canvas.clientHeight;
-      camera.updateProjectionMatrix();
-    }
+    
 
-    GameObjectManager.update()
-    controls.update();
+    
 
     // Animate Fans
     Globals.fans.forEach(fan => {
@@ -469,15 +382,14 @@ const onModelLoaded = async (model: Model) => {
       document.body.style.cursor = 'default';
     }
 
-    renderer.render(scene, camera)
     requestAnimationFrame(render)
   }
 
   requestAnimationFrame(render)
 
   // 关闭loading
-  loaded.value = true
-  console.log('加载完成:', model)
+  // loaded.value = true
+  // console.log('加载完成:', model)
 }
 
 /**
@@ -486,24 +398,21 @@ const onModelLoaded = async (model: Model) => {
 const loadAvatarModel = async (avatarPosition: THREE.Object3D | null) => {
   try {
     console.log('开始加载角色模型...')
-    
+
     // 加载角色模型
-    const avatarModel = await ModelLoader.load(
-      baseUrl + "/models/avatar.glb",
-      (progress) => {
-        console.log(`角色模型加载进度: ${(progress * 100).toFixed(1)}%`)
-      }
+    const avatarModel = await modelLoader.load(
+      baseUrl + "/models/avatar.glb"
     )
-    
+
     console.log('角色模型加载完成，开始应用材质...', avatarModel)
-    
+
     // 应用烘焙贴图到角色
     applyAvatarTextures(avatarModel)
-    
+
     // 创建Avatar游戏对象
     const avatarGameObject = GameObjectManager.createGameObject(scene, 'avatar')
     Globals.avatar = avatarGameObject.addComponent(Avatar, avatarModel)
-    
+
     // 放置角色到指定位置
     if (avatarPosition) {
       avatarGameObject.transform.position.copy(avatarPosition.position)
@@ -514,9 +423,9 @@ const loadAvatarModel = async (avatarPosition: THREE.Object3D | null) => {
       avatarGameObject.transform.position.set(0, 0, 0)
       console.log('未找到avatar_position，使用默认位置(0,0,0)')
     }
-    
+
     console.log('Avatar组件创建完成')
-    
+
   } catch (error) {
     console.error('角色加载失败:', error)
   }
@@ -527,25 +436,25 @@ const loadAvatarModel = async (avatarPosition: THREE.Object3D | null) => {
  */
 const applyAvatarTextures = (avatarModel: Model) => {
   // 获取角色纹理
-  const avatarTexture = textureManager.getTexture('Avatar')
-  if (!avatarTexture) {
-    console.error('角色纹理未加载')
-    return
-  }
-  
+  // const avatarTexture = textureManager.getTexture('Avatar')
+  // if (!avatarTexture) {
+  //   console.error('角色纹理未加载')
+  //   return
+  // }
+
   // 遍历角色模型的所有网格
   avatarModel.gltf.scene.traverse((child) => {
     if (child instanceof THREE.Mesh) {
       console.log(`处理角色网格: ${child.name}`)
-      
+
       // 创建材质并应用烘焙贴图
       const material = new THREE.MeshBasicMaterial({
-        map: avatarTexture,
+        // map: avatarTexture,
         //side: THREE.DoubleSide, // 确保两面都渲染
       })
-      
+
       child.material = material
-      
+
       // 特殊处理：眼镜材质
       if (child.name.includes('Glass') || child.name.includes('glasses')) {
         console.log(`检测到眼镜材质: ${child.name}`)
@@ -566,10 +475,6 @@ const applyAvatarTextures = (avatarModel: Model) => {
   })
 }
 
-const onModelProgress = (progress: number) => {
-  modelProgress.value = progress
-  console.log(`模型加载进度: ${(progress * 100).toFixed(1)}%`)
-}
 
 </script>
 

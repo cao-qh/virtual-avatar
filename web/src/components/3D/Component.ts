@@ -1,4 +1,4 @@
-import GameObject from "./GameObject"
+import GameObject from "@/components/3D/GameObject"
 
 class Component {
   gameObject:GameObject;

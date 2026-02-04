@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import Component from './Component';
+import Component from '@/components/3D/Component';
 
 function removeArrayElement<T>(array:Array<T>, element:T) {
   const ndx = array.indexOf(element);

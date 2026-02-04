@@ -1,7 +1,7 @@
 import * as THREE from "three"
 import * as SkeletonUtils from "three/examples/jsm/utils/SkeletonUtils.js"
 
-import type { Model } from "./ModelLoader"
+import  { type Model } from "@/components/3D/ModelManager"
 import Component from "./Component"
 import Globals from "@/utils/Globals"
 import GameObject from "./GameObject"

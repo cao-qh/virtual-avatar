@@ -1,7 +1,7 @@
 import Component from "../Component"
 import GameObject from "../GameObject"
 import SkinInstance from "../SkinInstance"
-import type { Model } from "../ModelLoader"
+import  { type Model } from "@/components/3D/ModelManager"
 import Mouth from "./Mouth"
 import Ear from "./Ear"
 import Thought from "./Thought"

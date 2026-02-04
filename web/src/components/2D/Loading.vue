@@ -36,6 +36,7 @@ watch(() => props.progress, (progress) => {
   text-align: center;
   font-size: xx-large;
   font-family: sans-serif;
+  background-color: white;
 }
 
 #loading>div>div {

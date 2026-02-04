@@ -20,4 +20,4 @@ class GameObjectManager {
   }
 }
 
-export default new GameObjectManager()
+export default  GameObjectManager
