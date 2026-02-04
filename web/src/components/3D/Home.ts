@@ -5,14 +5,13 @@ import GameObject from "@/components/3D/GameObject"
 import { type Model } from "@/components/3D/ModelManager"
 import { gsap } from "gsap"
 
-
 class Home extends Component {
   private textures: Map<string, THREE.Texture>
   private environmentMap: THREE.CubeTexture
   private introAnimaObj: Record<string, THREE.Object3D> = {}
   private fans: Array<THREE.Object3D> = []
   private raycasterObjects: Array<THREE.Object3D> = []
-  
+  private avatarPosition: THREE.Object3D | null = null
 
   constructor(
     gameObject: GameObject,
@@ -30,6 +29,10 @@ class Home extends Component {
 
   private addMaterial(model: Model) {
     model.gltf.scene.traverse((child: THREE.Object3D) => {
+      if (child.name.includes("avatar_position")) {
+        this.avatarPosition = child
+        // console.log('找到avatar_position:', child.position, child.rotation, child.scale)
+      }
       if (child.name.includes("Fan")) {
         this.fans.push(child)
       }
@@ -46,7 +49,6 @@ class Home extends Component {
       }
 
       if (child instanceof THREE.Mesh) {
-        
         if (child.name.includes("Wood01")) {
           this.introAnimaObj["Wood01"] = child
           child.scale.set(0, 1, 0)
@@ -79,7 +81,6 @@ class Home extends Component {
           this.introAnimaObj["Blender"] = child
           child.scale.set(0, 0, 0)
         }
-        
 
         if (child.name.includes("Water")) {
           child.material = new THREE.MeshBasicMaterial({
@@ -143,71 +144,106 @@ class Home extends Component {
     const t1 = gsap.timeline({
       defaults: {
         duration: 0.8,
-        ease: "back.out(1.8)"
-      }
+        ease: "back.out(1.8)",
+      },
     })
 
-
-    if (this.introAnimaObj.Wood01
-      && this.introAnimaObj.Wood02
-      && this.introAnimaObj.ButtenAbout
-      && this.introAnimaObj.ButtenContact
-      && this.introAnimaObj.ButtenIntro) {
+    if (
+      this.introAnimaObj.Wood01 &&
+      this.introAnimaObj.Wood02 &&
+      this.introAnimaObj.ButtenAbout &&
+      this.introAnimaObj.ButtenContact &&
+      this.introAnimaObj.ButtenIntro
+    ) {
       t1.to(this.introAnimaObj.Wood01.scale, {
         x: 1,
         z: 1,
-      }).to(this.introAnimaObj.Wood02.scale, {
-        x: 1,
-        y: 1,
-        z: 1,
-      }, "-=0.6").to(this.introAnimaObj.ButtenIntro.scale, {
-        x: 1,
-        y: 1,
-        z: 1,
-      }, "-=0.6").to(this.introAnimaObj.ButtenAbout.scale, {
-        x: 1,
-        y: 1,
-        z: 1,
-      }, "-=0.6").to(this.introAnimaObj.ButtenContact.scale, {
-        x: 1,
-        y: 1,
-        z: 1,
-      }, "-=0.6")
+      })
+        .to(
+          this.introAnimaObj.Wood02.scale,
+          {
+            x: 1,
+            y: 1,
+            z: 1,
+          },
+          "-=0.6",
+        )
+        .to(
+          this.introAnimaObj.ButtenIntro.scale,
+          {
+            x: 1,
+            y: 1,
+            z: 1,
+          },
+          "-=0.6",
+        )
+        .to(
+          this.introAnimaObj.ButtenAbout.scale,
+          {
+            x: 1,
+            y: 1,
+            z: 1,
+          },
+          "-=0.6",
+        )
+        .to(
+          this.introAnimaObj.ButtenContact.scale,
+          {
+            x: 1,
+            y: 1,
+            z: 1,
+          },
+          "-=0.6",
+        )
     }
 
     const t2 = gsap.timeline({
       defaults: {
         duration: 0.8,
-        ease: "back.out(1.8)"
-      }
+        ease: "back.out(1.8)",
+      },
     })
 
     t2.timeScale(0.8)
 
-
-    if (this.introAnimaObj.MilkTea
-      && this.introAnimaObj.Github
-      && this.introAnimaObj.Blender
+    if (
+      this.introAnimaObj.MilkTea &&
+      this.introAnimaObj.Github &&
+      this.introAnimaObj.Blender
     ) {
       t1.to(this.introAnimaObj.MilkTea.scale, {
         x: 1,
         y: 1,
         z: 1,
-      }).to(this.introAnimaObj.Github.scale, {
-        x: 1,
-        y: 1,
-        z: 1,
-      }, "-=0.6").to(this.introAnimaObj.Blender.scale, {
-        x: 1,
-        y: 1,
-        z: 1,
-      }, "-=0.6")
+      })
+        .to(
+          this.introAnimaObj.Github.scale,
+          {
+            x: 1,
+            y: 1,
+            z: 1,
+          },
+          "-=0.6",
+        )
+        .to(
+          this.introAnimaObj.Blender.scale,
+          {
+            x: 1,
+            y: 1,
+            z: 1,
+          },
+          "-=0.6",
+        )
     }
-
   }
 
   getRaycasterObjects() {
     return this.raycasterObjects
+  }
+
+  // 获取角色位置
+  getAvatarPosition() {
+    return this.avatarPosition
   }
 
   update() {

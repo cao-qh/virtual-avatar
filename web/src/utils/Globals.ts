@@ -1,4 +1,3 @@
-import * as THREE from "three"
 import Avatar from "@/components/3D/Avatar"
 
 

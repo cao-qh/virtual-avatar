@@ -13,7 +13,6 @@ import { ref, onMounted } from 'vue'
 import * as THREE from "three"
 
 import GameManager from '@/components/3D/GameManager';
-import Avatar from '@/components/3D/Avatar'
 import Globals from "@/utils/Globals.js";
 
 import Loading from '@/components/2D/Loading.vue'
@@ -52,17 +51,7 @@ onMounted(() => {
 const onModelLoaded = async (model: Model) => {
 
 
-  // 查找avatar_position空物体
-  let avatarPosition: THREE.Object3D | null = null
-  model.gltf.scene.traverse((child) => {
-    if (child.name === 'avatar_position') {
-      avatarPosition = child
-      // console.log('找到avatar_position:', child.position, child.rotation, child.scale)
-    }
-  })
 
-  // 添加入场动画
-  playIntroAnimation()
 
   // 加载角色模型
   // loadAvatarModel(avatarPosition)
@@ -72,7 +61,7 @@ const onModelLoaded = async (model: Model) => {
   // Globals.avatar = gameObject.addComponent(Avatar, model);
 
 
-  
+
 
 
   let then = 0;

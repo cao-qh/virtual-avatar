@@ -12,6 +12,8 @@ import CameraManager from "@/components/3D/CameraManager"
 import GameObjectManager from "@/components/3D/GameObjectManager"
 import RaycasterManager from "@/components/3D/RaycasterManager.ts"
 import Home from "@/components/3D/Home.ts"
+import Avatar from '@/components/3D/Avatar'
+
 
 // import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { OrbitControls } from "@/utils/OrbitControls.js"
@@ -99,14 +101,21 @@ class GameManager {
     this.controls.enableDamping = true
 
     // 创建home
-    const gameObject = this.gameObjectManager.createGameObject(
+    const homeObject = this.gameObjectManager.createGameObject(
       this.sceneManager.getScene(),
       Home.name,
     )
-    const home= gameObject.addComponent(Home, this.modelManager.getModel(Home.name),this.textureManager.getTexture(Home.name),this.sceneManager.getEnvironmentMap()) as Home
+    const homeComponent = homeObject.addComponent(Home, this.modelManager.getModel(Home.name),this.textureManager.getTexture(Home.name),this.sceneManager.getEnvironmentMap()) as Home
+
+    // 创建角色
+    const avatarObject = this.gameObjectManager.createGameObject(
+      this.sceneManager.getScene(),
+      Avatar.name,
+    )
+    avatarObject.addComponent(Avatar, this.modelManager.getModel(Avatar.name),homeComponent.getAvatarPosition())
 
     // 给射线管理器添加可被射线检测的物体
-    this.raycasterManager.addRaycasterObject(home.getRaycasterObjects())
+    this.raycasterManager.addRaycasterObject(homeComponent.getRaycasterObjects())
   }
 
   update() {

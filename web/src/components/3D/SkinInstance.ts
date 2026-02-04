@@ -2,9 +2,9 @@ import * as THREE from "three"
 import * as SkeletonUtils from "three/examples/jsm/utils/SkeletonUtils.js"
 
 import  { type Model } from "@/components/3D/ModelManager"
-import Component from "./Component"
+import Component from "@/components/3D/Component"
 import Globals from "@/utils/Globals"
-import GameObject from "./GameObject"
+import GameObject from "@/components/3D/GameObject"
 
 class SkinInstance extends Component {
   model: Model
