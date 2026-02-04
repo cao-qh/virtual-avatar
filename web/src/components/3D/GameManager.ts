@@ -10,6 +10,7 @@ import {
 import SceneManager from "@/components/3D/SceneManager.ts"
 import CameraManager from "@/components/3D/CameraManager"
 import GameObjectManager from "@/components/3D/GameObjectManager"
+import RaycasterManager from "@/components/3D/RaycasterManager.ts"
 import Home from "@/components/3D/Home.ts"
 
 // import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -42,6 +43,7 @@ class GameManager {
   private sceneManager: SceneManager
   private cameraManager: CameraManager
   private gameObjectManager: GameObjectManager
+  private raycasterManager : RaycasterManager
   private controls: OrbitControls
 
   constructor(c: HTMLCanvasElement) {
@@ -60,6 +62,7 @@ class GameManager {
     )
     this.cameraManager = new CameraManager()
     this.gameObjectManager = new GameObjectManager()
+    this.raycasterManager = new RaycasterManager(this.cameraManager.getCamera(),c)
     this.controls = new OrbitControls(this.cameraManager.getCamera(), this.canvas)
   }
 
@@ -100,7 +103,10 @@ class GameManager {
       this.sceneManager.getScene(),
       Home.name,
     )
-    gameObject.addComponent(Home, this.modelManager.getModel(Home.name),this.textureManager.getTexture(Home.name),this.sceneManager.getEnvironmentMap())
+    const home= gameObject.addComponent(Home, this.modelManager.getModel(Home.name),this.textureManager.getTexture(Home.name),this.sceneManager.getEnvironmentMap()) as Home
+
+    // 给射线管理器添加可被射线检测的物体
+    this.raycasterManager.addRaycasterObject(home.getRaycasterObjects())
   }
 
   update() {
@@ -111,6 +117,7 @@ class GameManager {
     }
 
     this.gameObjectManager.update()
+    this.raycasterManager.update()
     this.controls.update();
 
     this.renderer.render(
