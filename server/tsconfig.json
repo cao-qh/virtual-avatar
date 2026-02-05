@@ -4,7 +4,8 @@
     "module": "commonjs",
     "target": "esnext",
     "sourceMap": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "resolveJsonModule": true
   },
   "include": ["./src/**/*"]
 }

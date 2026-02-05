@@ -9,6 +9,8 @@ import axios from "axios"
 import FormData from "form-data"
 import { Logger } from "./utils/logger"
 import { ClientManager } from "./clientManager"
+import ApiConfig from "./ApIConfig.json"
+
 
 // 确保录音目录存在
 const recordingsDir = path.join(__dirname, "recordings")
@@ -231,7 +233,7 @@ async function processAudioWithTTS(mp3Buffer: Buffer, clientId: string) {
         headers: {
           ...form.getHeaders(),
           Authorization:
-            "Bearer sk-lmtnyslrfqrrcwkadnrbhhfopohuevcgaeyjmcqrvneouqxn",
+            `Bearer ${ApiConfig.APIKey}`,
         },
       },
     )
@@ -285,7 +287,7 @@ async function processTextWithLLM(ttsText: string, clientId: string) {
       {
         headers: {
           Authorization:
-            "Bearer sk-lmtnyslrfqrrcwkadnrbhhfopohuevcgaeyjmcqrvneouqxn",
+             `Bearer ${ApiConfig.APIKey}`,
           "Content-Type": "application/json",
         },
       },
@@ -322,7 +324,7 @@ async function processTextToAudioTTS(llmText: string, clientId: string) {
       {
         headers: {
           Authorization:
-            "Bearer sk-lmtnyslrfqrrcwkadnrbhhfopohuevcgaeyjmcqrvneouqxn",
+            `Bearer ${ApiConfig.APIKey}`,
           "Content-Type": "application/json",
         },
         responseType: "arraybuffer",
