@@ -100,6 +100,9 @@ class Thought extends Component {
    */
   sendAudioData(data: Blob): void {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      // 发送思考中状态
+      eventBus.emit('avatar-status-changed', 'thinking')
+      
       // 转换为ArrayBuffer发送
       data
         .arrayBuffer()
