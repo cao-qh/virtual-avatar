@@ -9,7 +9,36 @@ import axios from "axios"
 import FormData from "form-data"
 import { Logger } from "./utils/logger"
 import { ClientManager } from "./clientManager"
-import ApiConfig from "./ApIConfig.json"
+
+// 加载 API 配置
+// 优先使用环境变量，如果不存在则使用配置文件
+let API_KEY = process.env.API_KEY
+
+if (!API_KEY) {
+  try {
+    // 动态导入配置文件（避免在文件不存在时报错）
+    const ApiConfig = require("./ApIConfig.json")
+    API_KEY = ApiConfig.APIKey
+    Logger.info("使用配置文件中的 API key")
+  } catch (error) {
+    Logger.error("无法加载 API 配置", {
+      error: "请设置 API_KEY 环境变量或创建 ApIConfig.json 文件",
+      hint: "复制 ApIConfig.json.example 为 ApIConfig.json 并填入你的 API key"
+    })
+    process.exit(1)
+  }
+} else {
+  Logger.info("使用环境变量中的 API key")
+}
+
+// 验证 API key
+if (!API_KEY || API_KEY === "YOUR_API_KEY_HERE") {
+  Logger.error("无效的 API key", {
+    error: "请提供有效的 API key",
+    hint: "通过环境变量 API_KEY 或 ApIConfig.json 文件设置"
+  })
+  process.exit(1)
+}
 
 
 // 确保录音目录存在
@@ -232,8 +261,7 @@ async function processAudioWithTTS(mp3Buffer: Buffer, clientId: string) {
       {
         headers: {
           ...form.getHeaders(),
-          Authorization:
-            `Bearer ${ApiConfig.APIKey}`,
+          Authorization: `Bearer ${API_KEY}`,
         },
       },
     )
@@ -286,8 +314,7 @@ async function processTextWithLLM(ttsText: string, clientId: string) {
       },
       {
         headers: {
-          Authorization:
-             `Bearer ${ApiConfig.APIKey}`,
+          Authorization: `Bearer ${API_KEY}`,
           "Content-Type": "application/json",
         },
       },
@@ -323,8 +350,7 @@ async function processTextToAudioTTS(llmText: string, clientId: string) {
       },
       {
         headers: {
-          Authorization:
-            `Bearer ${ApiConfig.APIKey}`,
+          Authorization: `Bearer ${API_KEY}`,
           "Content-Type": "application/json",
         },
         responseType: "arraybuffer",

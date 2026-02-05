@@ -1,5 +1,5 @@
 /server/src/recordings
-/server/src/ApIConfig.json
+/server/src/ApIConfig.json  # 配置文件模板在 ApIConfig.json.example 中
 
 # Logs
 logs
