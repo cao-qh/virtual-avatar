@@ -8,11 +8,12 @@
             <h2 class="dialog-title">{{ title }}</h2>
             <button class="dialog-close" @click="close">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
               </svg>
             </button>
           </div>
-          
+
           <!-- 内容区域 -->
           <div class="dialog-content">
             <div v-if="title === '介绍'" class="content-intro">
@@ -27,7 +28,7 @@
               </ul>
               <p>系统采用现代 Web 技术栈，提供沉浸式的交互体验。</p>
             </div>
-            
+
             <div v-else-if="title === '关于'" class="content-about">
               <div class="about-avatar">
                 <div class="avatar-placeholder">👨‍💻</div>
@@ -43,27 +44,31 @@
               </div>
               <p>项目旨在探索虚拟形象与用户的自然交互方式，为未来的虚拟助手和数字人技术提供参考。</p>
             </div>
-            
+
             <div v-else-if="title === '联系'" class="content-contact">
               <h3>联系我们</h3>
               <p>如果您对这个项目感兴趣，或者有任何建议，欢迎通过以下方式联系：</p>
               <div class="contact-methods">
                 <div class="contact-item">
-                  <span class="contact-icon">📧</span>
-                  <span>邮箱: contact@example.com</span>
+                  <span class="contact-icon">󠁇󠁇󠁇󠁇💬</span>
+                  <span>Weixin: chuyan702</span>
                 </div>
-                <div class="contact-item">
+                <a href="https://gitee.com/cqh1991/virtual-avatar" target="_blank" class="contact-item">
                   <span class="contact-icon">🐙</span>
-                  <span>GitHub: github.com/virtual-avatar</span>
-                </div>
+                  <span>Gitee: gitee.com/cqh1991/virtual-avatar.git</span>
+                </a>
+                <a href="https://github.com/cao-qh/virtual-avatar" target="_blank" class="contact-item">
+                  <span class="contact-icon">🐙</span>
+                  <span>Github: github.com/cao-qh/virtual-avatar.git</span>
+                </a>
                 <div class="contact-item">
-                  <span class="contact-icon">💬</span>
-                  <span>Discord: discord.gg/virtual-avatar</span>
+                  <span class="contact-icon">📧</span>
+                  <span>邮箱: 380229607@qq.com</span>
                 </div>
               </div>
               <p class="contact-note">我们欢迎技术交流、合作建议和反馈意见！</p>
             </div>
-            
+
             <div v-else class="content-default">
               <p>这是一个对话框示例，标题为: <strong>{{ title }}</strong></p>
               <p>对话框内容可以根据不同的标题显示不同的信息。</p>
@@ -133,12 +138,14 @@ defineExpose({
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.3); /* 透明黑色，不透明度降低 */
+  background-color: rgba(0, 0, 0, 0.3);
+  /* 透明黑色，不透明度降低 */
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  backdrop-filter: blur(4px); /* 轻微模糊效果 */
+  backdrop-filter: blur(4px);
+  /* 轻微模糊效果 */
 }
 
 /* 对话框包装器 */
@@ -150,15 +157,20 @@ defineExpose({
 
 /* 对话框容器 - 粉色紫色主题 */
 .dialog-container {
-  background: linear-gradient(135deg, #ffd6e7 0%, #e6d6ff 100%); /* 浅粉色到浅紫色渐变 */
-  border-radius: 20px; /* 更圆润的边框 */
-  box-shadow: 0 15px 50px rgba(255, 105, 180, 0.3), 
-              0 5px 20px rgba(147, 112, 219, 0.2),
-              0 0 0 1px rgba(255, 255, 255, 0.3); /* 粉色紫色阴影 */
+  background: linear-gradient(135deg, #ffd6e7 0%, #e6d6ff 100%);
+  /* 浅粉色到浅紫色渐变 */
+  border-radius: 20px;
+  /* 更圆润的边框 */
+  box-shadow: 0 15px 50px rgba(255, 105, 180, 0.3),
+    0 5px 20px rgba(147, 112, 219, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.3);
+  /* 粉色紫色阴影 */
   overflow: hidden;
-  color: #5a3d5c; /* 深紫色文字 */
+  color: #5a3d5c;
+  /* 深紫色文字 */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-  border: 1px solid rgba(255, 255, 255, 0.5); /* 白色半透明边框 */
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  /* 白色半透明边框 */
 }
 
 /* 标题栏 - 粉色主题 */
@@ -167,7 +179,8 @@ defineExpose({
   align-items: center;
   justify-content: space-between;
   padding: 18px 22px;
-  background: linear-gradient(90deg, #ffb6c1 0%, #d8bfd8 100%); /* 粉色到淡紫色渐变 */
+  background: linear-gradient(90deg, #ffb6c1 0%, #d8bfd8 100%);
+  /* 粉色到淡紫色渐变 */
   border-bottom: 2px solid rgba(255, 255, 255, 0.4);
 }
 
@@ -175,7 +188,8 @@ defineExpose({
   margin: 0;
   font-size: 18px;
   font-weight: 700;
-  color: #8b008b; /* 深紫色 */
+  color: #8b008b;
+  /* 深紫色 */
   letter-spacing: 0.5px;
   text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
 }
@@ -190,14 +204,16 @@ defineExpose({
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #ff69b4; /* 热粉色 */
+  color: #ff69b4;
+  /* 热粉色 */
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(255, 105, 180, 0.3);
 }
 
 .dialog-close:hover {
   background: rgba(255, 255, 255, 0.9);
-  color: #ff1493; /* 深粉色 */
+  color: #ff1493;
+  /* 深粉色 */
   transform: rotate(90deg) scale(1.1);
   box-shadow: 0 4px 12px rgba(255, 20, 147, 0.4);
 }
@@ -207,13 +223,15 @@ defineExpose({
   padding: 22px;
   max-height: 350px;
   overflow-y: auto;
-  background: rgba(255, 255, 255, 0.7); /* 半透明白色背景 */
+  background: rgba(255, 255, 255, 0.7);
+  /* 半透明白色背景 */
 }
 
 .dialog-content h3 {
   margin-top: 0;
   margin-bottom: 14px;
-  color: #da70d6; /* 兰花紫 */
+  color: #da70d6;
+  /* 兰花紫 */
   font-size: 17px;
   font-weight: 700;
   border-bottom: 2px solid rgba(218, 112, 214, 0.3);
@@ -223,7 +241,8 @@ defineExpose({
 .dialog-content p {
   margin: 0 0 14px 0;
   line-height: 1.6;
-  color: #6a5acd; /* 板岩蓝紫色 */
+  color: #6a5acd;
+  /* 板岩蓝紫色 */
   font-size: 14px;
 }
 
@@ -234,7 +253,8 @@ defineExpose({
 
 .dialog-content li {
   margin-bottom: 8px;
-  color: #9370db; /* 中紫色 */
+  color: #9370db;
+  /* 中紫色 */
   line-height: 1.5;
   font-size: 14px;
 }
@@ -250,9 +270,11 @@ defineExpose({
   align-items: center;
   margin-bottom: 12px;
   padding: 8px 12px;
-  background: rgba(255, 182, 193, 0.2); /* 浅粉色背景 */
+  background: rgba(255, 182, 193, 0.2);
+  /* 浅粉色背景 */
   border-radius: 10px;
-  border-left: 4px solid #ff69b4; /* 热粉色边框 */
+  border-left: 4px solid #ff69b4;
+  /* 热粉色边框 */
   font-size: 13px;
   transition: all 0.2s ease;
 }
@@ -277,7 +299,8 @@ defineExpose({
 .avatar-placeholder {
   width: 70px;
   height: 70px;
-  background: linear-gradient(135deg, #ff69b4 0%, #9370db 100%); /* 粉色到紫色渐变 */
+  background: linear-gradient(135deg, #ff69b4 0%, #9370db 100%);
+  /* 粉色到紫色渐变 */
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -378,31 +401,31 @@ defineExpose({
     width: 95%;
     margin: 16px;
   }
-  
+
   .dialog-header,
   .dialog-content {
     padding: 16px;
   }
-  
+
   .dialog-title {
     font-size: 16px;
   }
-  
+
   .tech-stack {
     justify-content: center;
   }
-  
+
   .dialog-content h3 {
     font-size: 16px;
   }
-  
+
   .dialog-content p,
   .dialog-content li,
   .contact-item,
   .contact-note {
     font-size: 13px;
   }
-  
+
   .avatar-placeholder {
     width: 60px;
     height: 60px;
@@ -410,4 +433,3 @@ defineExpose({
   }
 }
 </style>
-
