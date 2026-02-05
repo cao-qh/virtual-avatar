@@ -112,7 +112,7 @@ class GameManager {
       this.sceneManager.getScene(),
       Avatar.name,
     )
-    avatarObject.addComponent(Avatar, this.modelManager.getModel(Avatar.name),this.textureManager.getTexture(Avatar.name),homeComponent.getAvatarPosition())
+    avatarObject.addComponent(Avatar, this.modelManager.getModel(Avatar.name),this.textureManager.getTexture(Avatar.name),homeComponent.getAvatarPosition(),this.sceneManager.getEnvironmentMap())
 
     // 给射线管理器添加可被射线检测的物体
     this.raycasterManager.addRaycasterObject(homeComponent.getRaycasterObjects())
