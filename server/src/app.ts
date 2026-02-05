@@ -11,31 +11,27 @@ import { Logger } from "./utils/logger"
 import { ClientManager } from "./clientManager"
 
 // 加载 API 配置
-// 优先使用环境变量，如果不存在则使用配置文件
-let API_KEY = process.env.API_KEY
+let API_KEY: string
 
-if (!API_KEY) {
-  try {
-    // 动态导入配置文件（避免在文件不存在时报错）
-    const ApiConfig = require("./ApIConfig.json")
-    API_KEY = ApiConfig.APIKey
-    Logger.info("使用配置文件中的 API key")
-  } catch (error) {
-    Logger.error("无法加载 API 配置", {
-      error: "请设置 API_KEY 环境变量或创建 ApIConfig.json 文件",
-      hint: "复制 ApIConfig.json.example 为 ApIConfig.json 并填入你的 API key"
+try {
+  // 导入配置文件
+  const ApiConfig = require("./ApIConfig.json")
+  API_KEY = ApiConfig.APIKey
+  
+  // 验证 API key
+  if (!API_KEY || API_KEY === "YOUR_API_KEY_HERE") {
+    Logger.error("无效的 API key", {
+      error: "请提供有效的 API key",
+      hint: "编辑 server/src/ApIConfig.json 文件，填入你的 API key"
     })
     process.exit(1)
   }
-} else {
-  Logger.info("使用环境变量中的 API key")
-}
-
-// 验证 API key
-if (!API_KEY || API_KEY === "YOUR_API_KEY_HERE") {
-  Logger.error("无效的 API key", {
-    error: "请提供有效的 API key",
-    hint: "通过环境变量 API_KEY 或 ApIConfig.json 文件设置"
+  
+  Logger.info("API 配置加载成功")
+} catch (error) {
+  Logger.error("无法加载 API 配置", {
+    error: "配置文件不存在或格式错误",
+    hint: "请复制 server/src/ApIConfig.json.example 为 server/src/ApIConfig.json 并填入你的 API key"
   })
   process.exit(1)
 }
