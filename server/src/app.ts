@@ -287,7 +287,7 @@ async function processTextWithLLM(ttsText: string, clientId: string) {
           {
             role: "system",
             content:
-              "你是一个知心好友，虽然话不多，但是充满了温暖。只会说汉语和英语，默认说汉语。",
+              "你是一个虚拟AI数字人，一个女孩子形象。只会说汉语和英语，默认说汉语。和人聊天语言简短",
           },
           {
             role: "user",
