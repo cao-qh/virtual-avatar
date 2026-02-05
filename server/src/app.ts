@@ -12,6 +12,7 @@ import { ClientManager } from "./clientManager"
 
 // 确保录音目录存在
 const recordingsDir = path.join(__dirname, "recordings")
+
 if (!fs.existsSync(recordingsDir)) {
   fs.mkdirSync(recordingsDir, { recursive: true })
   Logger.info(`创建录音目录`, { path: recordingsDir })
@@ -56,14 +57,14 @@ wss.on("connection", (ws, req) => {
   //ws.send(Buffer.from([0x01])) // 发送单个字节作为确认
 
   // 处理消息 - 只处理二进制音频数据
-  ws.on("message", (data) => {
+  ws.on("message", async (data) => {
     try {
       // 更新最后活动时间
       session.lastActivity = new Date()
 
       // 只处理二进制数据
       if (data instanceof Buffer || data instanceof ArrayBuffer) {
-        handleAudioData(session, data)
+        await handleAudioData(session, data)
       }
     } catch (error: any) {
       Logger.error("处理音频数据时出错", {
@@ -92,30 +93,22 @@ wss.on("connection", (ws, req) => {
  */
 async function handleAudioData(session: any, data: Buffer | ArrayBuffer) {
   const buffer = data instanceof ArrayBuffer ? Buffer.from(data) : data
-  const chunkSize = buffer.length
-
-  // 更新统计信息
-  clientManager.updateAudioStats(session.id, chunkSize)
-
-
-  Logger.info("🎵 音频数据统计", {
-    clientId: session.id.substring(0, 12) + "...",
-    运行时间: `${Math.round(
-      (Date.now() - session.connectedAt.getTime()) / 1000
-    )} 秒`,
-  })
 
   try {
     // 转换音频为 MP3 Buffer
     const mp3Buffer = await convertAudioChunkToMp3(session, buffer)
     if (mp3Buffer && session.ws) {
       // 处理音频：TTS 识别 → LLM 生成 → 发送给客户端
-      processAudioWithTTSAndLLM(mp3Buffer, session.id, session.ws).catch(err => {
-        Logger.error("处理音频失败", {
-          clientId: session.id.substring(0, 12) + "...",
-          error: err.message,
-        })
-      })
+      const ttsResponse = await processAudioWithTTS(mp3Buffer, session.id)
+      if (ttsResponse) {
+        const llmResponse = await processTextWithLLM(ttsResponse, session.id)
+        if (llmResponse) {
+          const audioData = await processTextToAudioTTS(llmResponse, session.id)
+          if (audioData) {
+            session.ws.send(audioData)
+          }
+        }
+      }
     }
   } catch (err) {
     Logger.error("处理音频数据块时发生错误", {
@@ -133,11 +126,11 @@ async function convertWebmToMp3Buffer(inputBuffer: Buffer): Promise<Buffer> {
     const tempDir = os.tmpdir()
     const tempWebmPath = path.join(
       tempDir,
-      `temp_${Date.now()}_${Math.random().toString(36).substring(2)}.webm`
+      `temp_${Date.now()}_${Math.random().toString(36).substring(2)}.webm`,
     )
     const tempMp3Path = path.join(
       tempDir,
-      `temp_${Date.now()}_${Math.random().toString(36).substring(2)}.mp3`
+      `temp_${Date.now()}_${Math.random().toString(36).substring(2)}.mp3`,
     )
 
     // 写入临时 WebM 文件
@@ -201,7 +194,10 @@ async function convertWebmToMp3Buffer(inputBuffer: Buffer): Promise<Buffer> {
 /**
  * 转换音频数据块为 MP3 Buffer
  */
-async function convertAudioChunkToMp3(session: any, chunk: Buffer): Promise<Buffer | null> {
+async function convertAudioChunkToMp3(
+  session: any,
+  chunk: Buffer,
+): Promise<Buffer | null> {
   try {
     const mp3Buffer = await convertWebmToMp3Buffer(chunk)
     Logger.debug("音频数据转换为 MP3 Buffer", {
@@ -218,56 +214,59 @@ async function convertAudioChunkToMp3(session: any, chunk: Buffer): Promise<Buff
   }
 }
 
-/**
- * 处理音频：TTS 识别 → LLM 生成 → 发送给客户端
- */
-async function processAudioWithTTSAndLLM(mp3Buffer: Buffer, clientId: string, ws: WebSocket): Promise<void> {
-  let ttsText = ''
+async function processAudioWithTTS(mp3Buffer: Buffer, clientId: string) {
   try {
     // 1. TTS 识别
     const form = new FormData()
-    form.append('file', mp3Buffer, {
-      filename: 'audio.mp3',
-      contentType: 'audio/mpeg'
+    form.append("file", mp3Buffer, {
+      filename: "audio.mp3",
+      contentType: "audio/mpeg",
     })
-    form.append('model', 'FunAudioLLM/SenseVoiceSmall')
+    form.append("model", "FunAudioLLM/SenseVoiceSmall")
 
     const ttsResponse = await axios.post(
-      'https://api.siliconflow.cn/v1/audio/transcriptions',
+      "https://api.siliconflow.cn/v1/audio/transcriptions",
       form,
       {
         headers: {
           ...form.getHeaders(),
-          'Authorization': 'Bearer sk-lmtnyslrfqrrcwkadnrbhhfopohuevcgaeyjmcqrvneouqxn'
-        }
-      }
+          Authorization:
+            "Bearer sk-lmtnyslrfqrrcwkadnrbhhfopohuevcgaeyjmcqrvneouqxn",
+        },
+      },
     )
 
-    ttsText = ttsResponse.data?.text || ''
-    Logger.info('TTS 识别结果', { clientId: clientId.substring(0, 8) + '...', text: ttsText })
+    Logger.info("TTS 识别完成", {
+      clientId: clientId.substring(0, 8) + "...",
+      text: ttsResponse.data?.text || "",
+    })
 
-    if (!ttsText.trim()) {
-      // 如果识别结果为空，直接返回
-      // if (ws.readyState === WebSocket.OPEN) {
-      //   ws.send(JSON.stringify({ type: 'transcription', text: '' }))
-      // }
-      return
-    }
+    return ttsResponse.data?.text || ""
+  } catch (error: any) {
+    Logger.error("TTS 识别失败", {
+      clientId: clientId.substring(0, 8) + "...",
+      error: error.message,
+    })
+  }
+}
 
+async function processTextWithLLM(ttsText: string, clientId: string) {
+  try {
     // 2. LLM 处理
     const llmResponse = await axios.post(
-      'https://api.siliconflow.cn/v1/chat/completions',
+      "https://api.siliconflow.cn/v1/chat/completions",
       {
-        model: 'THUDM/glm-4-9b-chat',
+        model: "Qwen/Qwen3-Next-80B-A3B-Instruct",
         messages: [
           {
-            role: 'system',
-            content: '你是一个知心好友，虽然话不多，但是充满了温暖。只会说汉语和英语，默认说汉语。'
+            role: "system",
+            content:
+              "你是一个知心好友，虽然话不多，但是充满了温暖。只会说汉语和英语，默认说汉语。",
           },
           {
-            role: 'user',
-            content: ttsText
-          }
+            role: "user",
+            content: ttsText,
+          },
         ],
         stream: false,
         max_tokens: 4096,
@@ -276,70 +275,69 @@ async function processAudioWithTTSAndLLM(mp3Buffer: Buffer, clientId: string, ws
         top_k: 50,
         frequency_penalty: 0.5,
         n: 1,
-        response_format: { type: 'text' },
+        response_format: { type: "text" },
         enable_thinking: false,
         thinking_budget: 4096,
         min_p: 0.05,
         stop: null,
-        tools: []
+        tools: [],
       },
       {
         headers: {
-          'Authorization': 'Bearer sk-lmtnyslrfqrrcwkadnrbhhfopohuevcgaeyjmcqrvneouqxn',
-          'Content-Type': 'application/json'
-        }
-      }
+          Authorization:
+            "Bearer sk-lmtnyslrfqrrcwkadnrbhhfopohuevcgaeyjmcqrvneouqxn",
+          "Content-Type": "application/json",
+        },
+      },
     )
 
-    const llmText = llmResponse.data?.choices?.[0]?.message?.content || ''
-    Logger.info('LLM 回复', { clientId: clientId.substring(0, 8) + '...', text: llmText })
+    const llmText = llmResponse.data?.choices?.[0]?.message?.content || ""
+    return llmText
+  } catch (error: any) {
+    Logger.error("LLM 处理失败", {
+      clientId: clientId.substring(0, 8) + "...",
+      error: error.message,
+    })
+  }
+}
 
-    if (!llmText.trim()) {
-      // 如果 LLM 回复为空，直接返回
-      return
-    }
 
+async function processTextToAudioTTS(llmText: string, clientId: string) {
+  try {
     // 3. TTS 合成：将 LLM 文本转换为语音
     const ttsSpeechResponse = await axios.post(
-      'https://api.siliconflow.cn/v1/audio/speech',
+      "https://api.siliconflow.cn/v1/audio/speech",
       {
-        model: 'FunAudioLLM/CosyVoice2-0.5B',
+        model: "FunAudioLLM/CosyVoice2-0.5B",
         input: llmText,
-        voice: 'FunAudioLLM/CosyVoice2-0.5B:claire',
-        response_format: 'mp3',
+        voice: "FunAudioLLM/CosyVoice2-0.5B:claire",
+        response_format: "mp3",
         sample_rate: 32000,
         stream: false,
         speed: 1,
         gain: 0,
         max_tokens: 4096,
-        references: []
+        references: [],
       },
       {
         headers: {
-          'Authorization': 'Bearer sk-lmtnyslrfqrrcwkadnrbhhfopohuevcgaeyjmcqrvneouqxn',
-          'Content-Type': 'application/json'
+          Authorization:
+            "Bearer sk-lmtnyslrfqrrcwkadnrbhhfopohuevcgaeyjmcqrvneouqxn",
+          "Content-Type": "application/json",
         },
-        responseType: 'arraybuffer'
-      }
+        responseType: "arraybuffer",
+      },
     )
-  
-    Logger.info('TTS 合成完成')
 
-    // 4. 发送音频二进制数据给客户端
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(ttsSpeechResponse.data)
-    }
+    return ttsSpeechResponse.data
   } catch (error: any) {
-    Logger.error('处理音频失败', {
-      clientId: clientId.substring(0, 8) + '...',
+    Logger.error("文本转语音失败", {
+      clientId: clientId.substring(0, 8) + "...",
       error: error.message,
     })
-    // 如果失败，尝试发送原始 TTS 文本作为回退
-    if (ttsText && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'transcription', text: ttsText }))
-    }
   }
 }
+
 
 /**
  * 优雅关闭处理

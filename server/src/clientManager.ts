@@ -1,4 +1,3 @@
-// server/src/clientManager.ts
 export interface ClientSession {
   id: string
   ip: string
@@ -30,13 +29,6 @@ export class ClientManager {
     return session
   }
 
-  updateAudioStats(clientId: string, chunkSize: number): void {
-    const session = this.clients.get(clientId)
-    if (!session) return
-
-    const now = new Date()
-    session.lastActivity = now
-  }
 
   getClient(clientId: string): ClientSession | undefined {
     return this.clients.get(clientId)
@@ -46,7 +38,7 @@ export class ClientManager {
     const session = this.clients.get(clientId)
     if (session) {
       const duration = Math.round(
-        (Date.now() - session.connectedAt.getTime()) / 1000
+        (Date.now() - session.connectedAt.getTime()) / 1000,
       )
 
       Logger.info(`客户端移除`, {

@@ -1,5 +1,6 @@
-import Component from "../Component"
-import GameObject from "../GameObject"
+import Component from "@/components/3D/Component"
+import GameObject from "@/components/3D/GameObject"
+
 
 // 一句话检测状态（使用字符串常量代替枚举，因为TypeScript配置了erasableSyntaxOnly）
 type SentenceDetectionState = "idle" | "recording" | "silence_detected"

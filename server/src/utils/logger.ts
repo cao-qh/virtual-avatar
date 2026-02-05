@@ -1,4 +1,3 @@
-// server/src/utils/logger.ts
 export enum LogLevel {
   DEBUG = 'DEBUG',
   INFO = 'INFO',
