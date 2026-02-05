@@ -21,14 +21,47 @@
 </template>
 
 <script setup lang='ts'>
-import { ref, computed } from 'vue'
-
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import eventBus from '@/utils/EventBus'
 
 // 语音状态管理
 const microphoneStatus = ref<'idle' | 'requesting' | 'granted' | 'denied'>('idle')
 const serverStatus = ref<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected')
 const avatarStatus = ref<'idle' | 'talking' | 'listening'>('idle')
 const isRecording = ref(false)
+
+// 事件处理函数
+const handleMicrophoneStatusChanged = (status: 'idle' | 'requesting' | 'granted' | 'denied') => {
+  microphoneStatus.value = status
+}
+
+const handleServerStatusChanged = (status: 'disconnected' | 'connecting' | 'connected' | 'error') => {
+  serverStatus.value = status
+}
+
+const handleAvatarStatusChanged = (status: 'idle' | 'talking' | 'listening') => {
+  avatarStatus.value = status
+}
+
+const handleRecordingStatusChanged = (recording: boolean) => {
+  isRecording.value = recording
+}
+
+// 初始化事件监听
+onMounted(() => {
+  eventBus.on('microphone-status-changed', handleMicrophoneStatusChanged)
+  eventBus.on('server-status-changed', handleServerStatusChanged)
+  eventBus.on('avatar-status-changed', handleAvatarStatusChanged)
+  eventBus.on('recording-status-changed', handleRecordingStatusChanged)
+})
+
+// 清理事件监听
+onUnmounted(() => {
+  eventBus.off('microphone-status-changed', handleMicrophoneStatusChanged)
+  eventBus.off('server-status-changed', handleServerStatusChanged)
+  eventBus.off('avatar-status-changed', handleAvatarStatusChanged)
+  eventBus.off('recording-status-changed', handleRecordingStatusChanged)
+})
 
 // 计算状态文本和类
 const microphoneStatusText = computed(() => {

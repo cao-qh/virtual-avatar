@@ -1,5 +1,6 @@
 import Component from "../Component"
 import GameObject from "../GameObject"
+import eventBus from "@/utils/EventBus"
 
 /**
  * 思维
@@ -34,11 +35,16 @@ class Thought extends Component {
     if (this.isManuallyClosed) return
 
     try {
+      // 发送连接中状态
+      eventBus.emit('server-status-changed', 'connecting')
+      
       this.socket = new WebSocket(this.url)
 
       this.socket.onopen = () => {
         console.log("WebSocket连接已建立")
         this.reconnectAttempts = 0
+        // 发送已连接状态
+        eventBus.emit('server-status-changed', 'connected')
         this.onOpen?.()
       }
 
@@ -54,6 +60,8 @@ class Thought extends Component {
 
       this.socket.onclose = () => {
         console.log("WebSocket连接已关闭")
+        // 发送断开连接状态
+        eventBus.emit('server-status-changed', 'disconnected')
         this.onClose?.()
 
         // 自动重连
@@ -76,10 +84,14 @@ class Thought extends Component {
 
       this.socket.onerror = (error) => {
         console.error("WebSocket错误:", error)
+        // 发送连接错误状态
+        eventBus.emit('server-status-changed', 'error')
         this.onError?.(error)
       }
     } catch (error) {
       console.error("创建WebSocket连接失败:", error)
+      // 发送连接错误状态
+      eventBus.emit('server-status-changed', 'error')
     }
   }
 

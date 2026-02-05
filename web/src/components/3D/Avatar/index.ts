@@ -6,6 +6,7 @@ import { type Model } from "@/components/3D/ModelManager"
 import Mouth from "@/components/3D/Avatar/Mouth"
 import Ear from "@/components/3D/Avatar/Ear"
 import Thought from "@/components/3D/Avatar/Thought"
+import eventBus from "@/utils/EventBus"
 
 class Avatar extends Component {
   // 玩家皮肤实例
@@ -102,6 +103,13 @@ class Avatar extends Component {
     this.state = state
     // 使用平滑过渡切换动画
     this.skinInstance.crossfadeTo(this.state, this.animationFadeDuration)
+    
+    // 发送角色状态事件
+    if (state === "talking") {
+      eventBus.emit('avatar-status-changed', 'talking')
+    } else {
+      eventBus.emit('avatar-status-changed', 'idle')
+    }
   }
 
   /**
@@ -131,6 +139,13 @@ class Avatar extends Component {
 
   update() {
     this.ear.update()
+    
+    // 检测用户是否在说话（聆听状态）
+    // 如果正在录音，说明用户在说话，角色处于聆听状态
+    // 只有当角色不在说话状态时，才发送聆听状态
+    if (this.state !== "talking" && this.ear.isRecording()) {
+      eventBus.emit('avatar-status-changed', 'listening')
+    }
   }
 }
 

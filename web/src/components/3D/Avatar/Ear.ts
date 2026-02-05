@@ -1,6 +1,6 @@
 import Component from "@/components/3D/Component"
 import GameObject from "@/components/3D/GameObject"
-
+import eventBus from "@/utils/EventBus"
 
 // 一句话检测状态（使用字符串常量代替枚举，因为TypeScript配置了erasableSyntaxOnly）
 type SentenceDetectionState = "idle" | "recording" | "silence_detected"
@@ -96,8 +96,15 @@ class Ear extends Component {
    */
   async listen() {
     try {
+      // 发送麦克风请求中状态
+      eventBus.emit('microphone-status-changed', 'requesting')
+      
       // 请求麦克风权限
       const audioStream = await this.requestMicrophonePermission()
+      
+      // 发送麦克风已授权状态
+      eventBus.emit('microphone-status-changed', 'granted')
+      
       // 初始化音量检测
       this.setupVolumeDetection(audioStream)
       // 创建录音对象
@@ -121,6 +128,8 @@ class Ear extends Component {
       console.log("已创建录音对象...")
     } catch (error) {
       console.error("初始化录音失败:", error)
+      // 发送麦克风被拒绝状态
+      eventBus.emit('microphone-status-changed', 'denied')
       throw error
     }
   }
@@ -143,6 +152,13 @@ class Ear extends Component {
     return sum / bufferLength
   }
 
+  /**
+   * 获取当前录音状态
+   */
+  isRecording(): boolean {
+    return this.sentenceDetectionState === "recording"
+  }
+
   stop() {
     if (this.recorder && this.recorder.state !== "inactive") {
       this.recorder.stop()
@@ -156,6 +172,10 @@ class Ear extends Component {
   }
 
   update() {
+    // 发送录音状态
+    const isCurrentlyRecording = this.sentenceDetectionState === "recording"
+    eventBus.emit('recording-status-changed', isCurrentlyRecording)
+    
     if (this.isMute()) {
       // silenceStartTime = Date.now()
       // console.log("mute...")
