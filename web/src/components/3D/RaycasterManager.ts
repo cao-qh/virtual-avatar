@@ -1,5 +1,6 @@
 import * as THREE from "three"
 import { gsap } from "gsap"
+import eventBus from "@/utils/EventBus"
 
 const socialLinks = {
   Github: "https://github.com/",
@@ -56,11 +57,11 @@ class RaycasterManager {
 
       if (object3d.name.includes("ButtenIntro")) {
         console.log("点击了介绍")
-        // dialog.value.open("介绍")
+        eventBus.emit('open-dialog', '介绍')
       } else if (object3d.name.includes("ButtenAbout")) {
-        // dialog.value.open("关于")
+        eventBus.emit('open-dialog', '关于')
       } else if (object3d.name.includes("ButtenContact")) {
-        // dialog.value.open("联系")
+        eventBus.emit('open-dialog', '联系')
       }
     }
   }
