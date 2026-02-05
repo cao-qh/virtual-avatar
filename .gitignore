@@ -1,4 +1,5 @@
 /server/src/recordings
+/server/src/ApIConfig.json
 
 # Logs
 logs
