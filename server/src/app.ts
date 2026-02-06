@@ -81,7 +81,7 @@ wss.on("connection", (ws, req) => {
   })
 
   // 发送简单的连接确认（可选）
-  //ws.send(Buffer.from([0x01])) // 发送单个字节作为确认
+  //ws.send('测试文本') // 发送单个字节作为确认
 
   // 处理消息 - 只处理二进制音频数据
   ws.on("message", async (data) => {
@@ -135,6 +135,11 @@ async function handleAudioData(session: any, data: Buffer | ArrayBuffer) {
             session.ws.send(audioData)
           }
         }
+      }else{
+        session.ws.send(JSON.stringify({
+          code:401,
+          message: "无法处理音频数据",
+        }))
       }
     }
   } catch (err) {

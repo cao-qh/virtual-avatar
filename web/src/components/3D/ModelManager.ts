@@ -17,7 +17,7 @@ class ModelManager {
   constructor(loadingManager: THREE.LoadingManager) {
     this.gltfLoader = new GLTFLoader(loadingManager)
     this.dracoLoader = new DRACOLoader()
-    this.dracoLoader.setDecoderPath(this.baseUrl + "/draco/")
+    this.dracoLoader.setDecoderPath(this.baseUrl + "draco/")
     this.gltfLoader.setDRACOLoader(this.dracoLoader)
   }
 

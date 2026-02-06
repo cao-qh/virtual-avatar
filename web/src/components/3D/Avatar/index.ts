@@ -21,7 +21,6 @@ class Avatar extends Component {
   private thought: Thought
   // 动画过渡时间（秒）
   private animationFadeDuration: number = 0.3
-  
 
   constructor(
     gameObject: GameObject,
@@ -31,7 +30,7 @@ class Avatar extends Component {
     environmentMap: THREE.CubeTexture,
   ) {
     super(gameObject)
-    this.addMaterial(model, texture,environmentMap)
+    this.addMaterial(model, texture, environmentMap)
     this.state = "idel"
     this.gameObject.transform.position.copy(postion.position)
     this.gameObject.transform.rotation.copy(postion.rotation)
@@ -55,17 +54,23 @@ class Avatar extends Component {
 
     // 当思考结束
     this.thought.onQuestionEnd = (blob) => {
+      console.log("思考结束")
       this.talk(blob)
     }
-    
-    // 监听状态变化事件，保持内部状态同步
-    eventBus.on('avatar-status-changed', (status: string) => {
+    this.thought.onError = (error) => {
+      console.log(error)
+      if (error.code === 401) {
+        // 音频不是一句话
+        this.setState("idel")
+      }
+    }
 
-      if(this.state === status)
-        return
+    // 监听状态变化事件，保持内部状态同步
+    eventBus.on("avatar-status-changed", (status: string) => {
+      if (this.state === status) return
 
       // 只处理 thinking 状态，其他状态由 Avatar 自己管理
-      if (status === 'thinking' || status === 'idel') {
+      if (status === "thinking" || status === "idel") {
         console.log(`收到思考状态事件，更新内部状态为: ${status}`)
         this.setState(status as any)
       }
@@ -73,7 +78,11 @@ class Avatar extends Component {
   }
 
   // 添加材质
-  addMaterial(model: Model, texture: THREE.Texture,environmentMap: THREE.CubeTexture) {
+  addMaterial(
+    model: Model,
+    texture: THREE.Texture,
+    environmentMap: THREE.CubeTexture,
+  ) {
     model.gltf.scene.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         // 创建材质并应用烘焙贴图
@@ -114,7 +123,7 @@ class Avatar extends Component {
     }
 
     this.state = state
-    
+
     // 映射状态到实际动画
     // 注意：模型可能没有所有状态的动画
     let animState = state
@@ -129,12 +138,12 @@ class Avatar extends Component {
     } else {
       console.log(`状态切换：${state}`)
     }
-    
+
     // 使用平滑过渡切换动画
     this.skinInstance.crossfadeTo(animState, this.animationFadeDuration)
-    
+
     // 发送角色状态事件
-    eventBus.emit('avatar-status-changed', state)
+    eventBus.emit("avatar-status-changed", state)
   }
 
   /**
@@ -164,13 +173,13 @@ class Avatar extends Component {
 
   update() {
     this.ear.update()
-    
+
     // 如果当前是 thinking 状态，不更新聆听/待机状态
     // thinking 状态由 Thought.ts 专门管理
     if (this.state === "thinking") {
       return
     }
-    
+
     // 检测用户是否在说话（聆听状态）
     // 如果正在录音，说明用户在说话，角色处于聆听状态
     if (this.state !== "talking" && this.ear.isRecording()) {

@@ -14,7 +14,7 @@ class Thought extends Component {
   private isManuallyClosed = false
   onOpen?: () => void
   onClose?: () => void
-  onError?: (error: Event) => void
+  onError?: (error: any) => void
   onReconnect?: (attempt: number) => void
   onQuestionEnd?: (blob: Blob) => void // 新增：处理二进制音频数据
 
@@ -55,6 +55,7 @@ class Thought extends Component {
         } else {
           // 文本消息（目前服务器不再发送文本，但保留处理）
           console.log("收到服务器文本消息:", event.data)
+          this.onError?.(JSON.parse(event.data))
         }
       }
 
@@ -102,42 +103,7 @@ class Thought extends Component {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
       // 发送思考中状态
       eventBus.emit('avatar-status-changed', 'thinking')
-      
-      // 注意：Avatar 状态由 Avatar 组件自己管理
-      // 这里只发送事件，不直接设置 Avatar 状态
-      // Avatar 的 update() 方法会跳过 'thinking' 状态，避免覆盖
-      
-      // 设置超时机制（15秒后自动恢复待机状态）
-      const timeoutId = setTimeout(() => {
-        console.warn("服务器响应超时（15秒），恢复待机状态")
-        eventBus.emit('avatar-status-changed', 'idel')
-        // 重置回调，避免内存泄漏
-        this.onQuestionEnd = undefined
-      }, 15000)
-      
-      // 保存原始回调
-      const originalOnQuestionEnd = this.onQuestionEnd
-      
-      // 设置临时回调，在收到响应时清除超时
-      const tempOnQuestionEnd = (blob: Blob) => {
-        clearTimeout(timeoutId)
-        
-        // 检查服务器返回的音频是否有效
-        if (blob.size === 0) {
-          console.warn("服务器返回空音频数据，恢复待机状态")
-          eventBus.emit('avatar-status-changed', 'idle')
-          // 恢复原始回调
-          this.onQuestionEnd = originalOnQuestionEnd
-          return
-        }
-        
-        // 恢复原始回调并调用
-        this.onQuestionEnd = originalOnQuestionEnd
-        originalOnQuestionEnd?.(blob)
-      }
-      
-      // 设置临时回调
-      this.onQuestionEnd = tempOnQuestionEnd
+     
       
       // 转换为ArrayBuffer发送
       data
@@ -149,10 +115,10 @@ class Thought extends Component {
         })
         .catch((error) => {
           console.error("转换音频数据失败:", error)
-          clearTimeout(timeoutId)
+          // clearTimeout(timeoutId)
           eventBus.emit('avatar-status-changed', 'idle')
           // 恢复原始回调
-          this.onQuestionEnd = originalOnQuestionEnd
+          // this.onQuestionEnd = originalOnQuestionEnd
         })
     } else {
       console.warn("WebSocket未连接，音频数据丢失")

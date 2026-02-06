@@ -78,7 +78,7 @@ class GameManager {
     // 加载纹理贴图
     this.textureManager.load(textureConfig)
     // 加载模型
-    this.modelManager.load(modles)
+    this.modelManager.loadMore(modles)
     // 加载环境贴图
     this.sceneManager.loadEnvironmentTexture(cubeTexturePath)
   }
