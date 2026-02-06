@@ -9,39 +9,52 @@ export type Model = {
 }
 
 class ModelManager {
-
   private gltfLoader: GLTFLoader
   private dracoLoader: DRACOLoader
   private baseUrl = import.meta.env.BASE_URL
   private models: Map<string, Model> = new Map()
 
-  constructor(loadingManager?: THREE.LoadingManager) {
+  constructor(loadingManager: THREE.LoadingManager) {
     this.gltfLoader = new GLTFLoader(loadingManager)
     this.dracoLoader = new DRACOLoader()
     this.dracoLoader.setDecoderPath(this.baseUrl + "/draco/")
     this.gltfLoader.setDRACOLoader(this.dracoLoader)
   }
 
-  load(data: Record<string, string>) {
+  private formatAnimations(gltf: GLTF) {
+    const animsByName: {
+      [key: string]: THREE.AnimationClip
+    } = {}
+    if (gltf.animations) {
+      gltf.animations.forEach((clip: THREE.AnimationClip) => {
+        animsByName[clip.name] = clip
+      })
+    }
+    return animsByName
+  }
+
+  loadMore(data: Record<string, string>) {
     Object.entries(data).forEach(([key, url]) => {
       if (this.models.has(key)) {
         return
       }
 
       this.gltfLoader.load(url, (gltf: GLTF) => {
-        const animsByName: {
-          [key: string]: THREE.AnimationClip
-        } = {}
-        if (gltf.animations) {
-          gltf.animations.forEach((clip: THREE.AnimationClip) => {
-            animsByName[clip.name] = clip
-          })
-        }
         this.models.set(key, {
           url,
           gltf,
-          animations: animsByName,
+          animations: this.formatAnimations(gltf),
         })
+      })
+    })
+  }
+
+  loadSingle(name: string, path: string) {
+    this.gltfLoader.load(path, (gltf: GLTF) => {
+      this.models.set(name, {
+        url: path,
+        gltf,
+        animations: this.formatAnimations(gltf),
       })
     })
   }
