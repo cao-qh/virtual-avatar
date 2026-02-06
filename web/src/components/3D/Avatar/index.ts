@@ -11,8 +11,8 @@ import eventBus from "@/utils/EventBus"
 class Avatar extends Component {
   // 玩家皮肤实例
   private skinInstance: SkinInstance
-  // 角色状态
-  private state: "idel" | "talking"
+  // 角色状态（扩展为四种状态）
+  private state: "idel" | "talking" | "listening" | "thinking"
   // 嘴巴
   private mouth: Mouth
   // 耳朵
@@ -57,6 +57,19 @@ class Avatar extends Component {
     this.thought.onQuestionEnd = (blob) => {
       this.talk(blob)
     }
+    
+    // 监听状态变化事件，保持内部状态同步
+    eventBus.on('avatar-status-changed', (status: string) => {
+
+      if(this.state === status)
+        return
+
+      // 只处理 thinking 状态，其他状态由 Avatar 自己管理
+      if (status === 'thinking' || status === 'idel') {
+        console.log(`收到思考状态事件，更新内部状态为: ${status}`)
+        this.setState(status as any)
+      }
+    })
   }
 
   // 添加材质
@@ -94,22 +107,34 @@ class Avatar extends Component {
    * 设置角色状态（使用平滑动画过渡）
    * @param state 新状态
    */
-  private setState(state: "idel" | "talking") {
+  private setState(state: "idel" | "talking" | "listening" | "thinking") {
     // 如果状态没有变化，直接返回
     if (this.state === state) {
       return
     }
 
     this.state = state
+    
+    // 映射状态到实际动画
+    // 注意：模型可能没有所有状态的动画
+    let animState = state
+    if (state === "listening") {
+      // 聆听状态使用待机动画（模型没有 listening 动画）
+      animState = "idel"
+      console.log(`状态映射：${state} → ${animState}（使用待机动画）`)
+    } else if (state === "thinking") {
+      // 思考状态使用思考动画（用户已添加）
+      animState = "thinking"
+      console.log(`状态切换：${state}（使用思考动画）`)
+    } else {
+      console.log(`状态切换：${state}`)
+    }
+    
     // 使用平滑过渡切换动画
-    this.skinInstance.crossfadeTo(this.state, this.animationFadeDuration)
+    this.skinInstance.crossfadeTo(animState, this.animationFadeDuration)
     
     // 发送角色状态事件
-    if (state === "talking") {
-      eventBus.emit('avatar-status-changed', 'talking')
-    } else {
-      eventBus.emit('avatar-status-changed', 'idle')
-    }
+    eventBus.emit('avatar-status-changed', state)
   }
 
   /**
@@ -140,18 +165,19 @@ class Avatar extends Component {
   update() {
     this.ear.update()
     
+    // 如果当前是 thinking 状态，不更新聆听/待机状态
+    // thinking 状态由 Thought.ts 专门管理
+    if (this.state === "thinking") {
+      return
+    }
+    
     // 检测用户是否在说话（聆听状态）
     // 如果正在录音，说明用户在说话，角色处于聆听状态
-    // 只有当角色不在说话状态时，才发送聆听状态
     if (this.state !== "talking" && this.ear.isRecording()) {
-      eventBus.emit('avatar-status-changed', 'listening')
+      this.setState("listening")
     } else if (this.state !== "talking" && !this.ear.isRecording()) {
       // 当不在录音且不在说话状态时，确保角色状态为待机
-      // 这里需要发送 idle 状态来覆盖之前的 listening 状态
-      // 为了避免频繁发送事件，我们只在状态实际需要改变时发送
-      // 注意：这里不能直接调用 setState("idel")，因为那会触发动画
-      // 我们只发送状态事件，不改变 Avatar 的内部状态
-      eventBus.emit('avatar-status-changed', 'idle')
+      this.setState("idel")
     }
   }
 }

@@ -103,10 +103,14 @@ class Thought extends Component {
       // 发送思考中状态
       eventBus.emit('avatar-status-changed', 'thinking')
       
+      // 注意：Avatar 状态由 Avatar 组件自己管理
+      // 这里只发送事件，不直接设置 Avatar 状态
+      // Avatar 的 update() 方法会跳过 'thinking' 状态，避免覆盖
+      
       // 设置超时机制（15秒后自动恢复待机状态）
       const timeoutId = setTimeout(() => {
         console.warn("服务器响应超时（15秒），恢复待机状态")
-        eventBus.emit('avatar-status-changed', 'idle')
+        eventBus.emit('avatar-status-changed', 'idel')
         // 重置回调，避免内存泄漏
         this.onQuestionEnd = undefined
       }, 15000)

@@ -55,12 +55,22 @@ class SkinInstance extends Component {
    * @param animName 动画名称
    * @param fadeDuration 过渡时间（秒），默认0.3秒
    */
-  crossfadeTo(animName: string, fadeDuration: number = 0.3) {
+  crossfadeTo(animName: string, fadeDuration: number = 0.3): void {
     if (!this.model.animations) {
       throw new Error("Model animations not loaded")
     }
 
+    // 安全检查：动画是否存在
     const clip = this.model.animations[animName] as THREE.AnimationClip
+    if (!clip) {
+      console.warn(`动画 "${animName}" 不存在，使用默认动画`)
+      // 回退到 "idel" 动画
+      if (animName !== "idel" && this.model.animations["idel"]) {
+        this.crossfadeTo("idel", fadeDuration)
+      }
+      return
+    }
+    
     let action = this.actions[animName]
     
     // 如果动作不存在，创建它
