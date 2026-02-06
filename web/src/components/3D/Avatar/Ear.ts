@@ -121,7 +121,16 @@ class Ear extends Component {
         if (event.data.size > 0 && audioDuration > 900) {
           // 添加音频长度检测：过滤掉过短的音频（小于1秒）
           if (audioDuration < 1000) {
-            console.log(`音频过短（${audioDuration}ms），忽略发送`)
+            console.log(`音频过短（${audioDuration}ms），忽略发送，完全重置状态机`)
+            // 完全重置状态机，避免一直停留在录音状态
+            this.sentenceDetectionState = "idle"
+            this.silenceStartTime = 0
+            this.speechStartTime = 0
+            // 停止录音器
+            if (this.recorder && this.recorder.state === "recording") {
+              this.recorder.stop()  
+            }
+            console.log(`状态机已重置：sentenceDetectionState=${this.sentenceDetectionState}, isRecording()=${this.isRecording()}`)
             return
           }
           
@@ -133,6 +142,11 @@ class Ear extends Component {
           // ...
         } else if (event.data.size > 0) {
           console.log(`音频数据被忽略：时长${audioDuration}ms < 900ms 或数据为空`)
+          // 同样完全重置状态机
+          this.sentenceDetectionState = "idle"
+          this.silenceStartTime = 0
+          this.speechStartTime = 0
+          console.log(`状态机已重置：sentenceDetectionState=${this.sentenceDetectionState}, isRecording()=${this.isRecording()}`)
         }
       }
 
@@ -165,9 +179,10 @@ class Ear extends Component {
 
   /**
    * 获取当前录音状态
+   * 注意：这里检查是否处于非空闲状态（recording 或 silence_detected）
    */
   isRecording(): boolean {
-    return this.sentenceDetectionState === "recording"
+    return this.sentenceDetectionState !== "idle"
   }
 
   stop() {

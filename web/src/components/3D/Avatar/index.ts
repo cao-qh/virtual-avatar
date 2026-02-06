@@ -145,6 +145,13 @@ class Avatar extends Component {
     // 只有当角色不在说话状态时，才发送聆听状态
     if (this.state !== "talking" && this.ear.isRecording()) {
       eventBus.emit('avatar-status-changed', 'listening')
+    } else if (this.state !== "talking" && !this.ear.isRecording()) {
+      // 当不在录音且不在说话状态时，确保角色状态为待机
+      // 这里需要发送 idle 状态来覆盖之前的 listening 状态
+      // 为了避免频繁发送事件，我们只在状态实际需要改变时发送
+      // 注意：这里不能直接调用 setState("idel")，因为那会触发动画
+      // 我们只发送状态事件，不改变 Avatar 的内部状态
+      eventBus.emit('avatar-status-changed', 'idle')
     }
   }
 }
