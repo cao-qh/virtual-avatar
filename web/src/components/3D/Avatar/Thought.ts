@@ -103,6 +103,38 @@ class Thought extends Component {
       // 发送思考中状态
       eventBus.emit('avatar-status-changed', 'thinking')
       
+      // 设置超时机制（15秒后自动恢复待机状态）
+      const timeoutId = setTimeout(() => {
+        console.warn("服务器响应超时（15秒），恢复待机状态")
+        eventBus.emit('avatar-status-changed', 'idle')
+        // 重置回调，避免内存泄漏
+        this.onQuestionEnd = undefined
+      }, 15000)
+      
+      // 保存原始回调
+      const originalOnQuestionEnd = this.onQuestionEnd
+      
+      // 设置临时回调，在收到响应时清除超时
+      const tempOnQuestionEnd = (blob: Blob) => {
+        clearTimeout(timeoutId)
+        
+        // 检查服务器返回的音频是否有效
+        if (blob.size === 0) {
+          console.warn("服务器返回空音频数据，恢复待机状态")
+          eventBus.emit('avatar-status-changed', 'idle')
+          // 恢复原始回调
+          this.onQuestionEnd = originalOnQuestionEnd
+          return
+        }
+        
+        // 恢复原始回调并调用
+        this.onQuestionEnd = originalOnQuestionEnd
+        originalOnQuestionEnd?.(blob)
+      }
+      
+      // 设置临时回调
+      this.onQuestionEnd = tempOnQuestionEnd
+      
       // 转换为ArrayBuffer发送
       data
         .arrayBuffer()
@@ -113,9 +145,15 @@ class Thought extends Component {
         })
         .catch((error) => {
           console.error("转换音频数据失败:", error)
+          clearTimeout(timeoutId)
+          eventBus.emit('avatar-status-changed', 'idle')
+          // 恢复原始回调
+          this.onQuestionEnd = originalOnQuestionEnd
         })
     } else {
       console.warn("WebSocket未连接，音频数据丢失")
+      // WebSocket未连接，立即恢复待机状态
+      eventBus.emit('avatar-status-changed', 'idle')
     }
   }
 

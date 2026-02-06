@@ -115,13 +115,24 @@ class Ear extends Component {
 
       this.recorder.ondataavailable = (event) => {
         const now = Date.now()
+        const audioDuration = now - this.speechStartTime
 
-        if (event.data.size > 0 && now - this.speechStartTime > 900) {
+        // 检查音频是否有效：有数据且持续时间足够长
+        if (event.data.size > 0 && audioDuration > 900) {
+          // 添加音频长度检测：过滤掉过短的音频（小于1秒）
+          if (audioDuration < 1000) {
+            console.log(`音频过短（${audioDuration}ms），忽略发送`)
+            return
+          }
+          
+          console.log(`发送音频数据，时长：${audioDuration}ms，大小：${event.data.size}字节`)
           this.onAudioData?.(event.data)
           // console.log("event.data:", event.data)
           // saveAudioToFile(event.data)
           // 发送录音数据
           // ...
+        } else if (event.data.size > 0) {
+          console.log(`音频数据被忽略：时长${audioDuration}ms < 900ms 或数据为空`)
         }
       }
 
