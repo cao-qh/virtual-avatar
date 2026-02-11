@@ -21,7 +21,7 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
       args:
-        - VITE_WS_HOST=ws://caoqihao.com/virtual-avatar-server:3000
+        - VITE_WS_HOST=wss://caoqihao.com/virtual-avatar-server/
         - NODE_ENV=production
         - BASE_URL=/virtual-avatar/
     volumes:
@@ -29,6 +29,6 @@ services:
     networks:
       - mymysql_general-network
     environment:
-      - VITE_WS_HOST=ws://caoqihao.com/virtual-avatar-server:3000
+      - VITE_WS_HOST=wss://caoqihao.com/virtual-avatar-server/
       - NODE_ENV=production
       - BASE_URL=/virtual-avatar/
