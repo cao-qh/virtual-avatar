@@ -15,7 +15,7 @@ let API_KEY: string
 
 try {
   // 导入配置文件
-  const ApiConfig = require("./ApIConfig.json")
+  const ApiConfig = require(process.cwd()+"/ApIConfig.json")
   API_KEY = ApiConfig.APIKey
   
   // 验证 API key

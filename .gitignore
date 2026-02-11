@@ -1,5 +1,6 @@
 /server/src/recordings
 /server/src/ApIConfig.json
+frontend-build
 
 # Logs
 logs
@@ -11,7 +12,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
+**/dist
 dist-ssr
 *.local
 
