@@ -145,9 +145,9 @@ docker-compose logs -f
 
 #### 前端环境变量
 ```bash
-VITE_WS_HOST=wss://your-domain.com/virtual-avatar-server/  # WebSocket 服务器地址
-BASE_URL=/virtual-avatar/                                   # 应用基础路径
-NODE_ENV=production                                         # 环境模式
+VITE_WS_HOST=wss://caoqihao.com/virtual-avatar-server/  # WebSocket 服务器地址
+BASE_URL=/virtual-avatar/                                # 应用基础路径
+NODE_ENV=production                                      # 环境模式
 ```
 
 #### 后端环境变量
@@ -186,14 +186,14 @@ docker-compose logs -f
 5. **配置 Nginx**：参考 `mynginx/nginx.conf` 示例配置
 
 ### 健康检查
-- 前端：访问 `https://your-domain.com/virtual-avatar/`
+- 前端：访问 `https://caoqihao.com/virtual-avatar/`
 - 后端：`curl http://localhost:3000/health` (Docker 内部)
 - WebSocket：浏览器控制台查看连接状态
 
 ## 🔌 API 文档
 
 ### WebSocket API
-- **连接地址**：`wss://your-domain.com/virtual-avatar-server/` (生产) 或 `ws://localhost:3000` (开发)
+- **连接地址**：`wss://caoqihao.com/virtual-avatar-server/` (生产) 或 `ws://localhost:3000` (开发)
 - **消息格式**：二进制音频数据
 - **响应格式**：二进制音频数据或 JSON 错误信息
 
@@ -271,12 +271,31 @@ chore: 构建过程或辅助工具变动
 - **文档**：[记忆库](./memory-bank/) 目录
 - **演示地址**：`https://caoqihao.com/virtual-avatar/`
 
+## 💝 捐赠支持
+
+Virtual Avatar 是一个开源项目，开发和维护需要投入大量时间和资源。如果您觉得这个项目对您有帮助，欢迎通过以下方式支持项目的持续发展：
+
+### 微信支付
+![微信收款码](./img/微信收款码.jpg)
+
+### 支付宝
+![支付宝收款码](./img/支付宝收款码.jpg)
+
+### 捐赠用途
+- 服务器和域名费用
+- AI API 服务费用
+- 项目功能开发和优化
+- 文档维护和社区支持
+
+每一份支持都是对开源项目的鼓励，感谢您的慷慨！
+
 ## 🙏 致谢
 
 - [Three.js](https://threejs.org/) - 强大的 Web 3D 库
 - [Vue.js](https://vuejs.org/) - 渐进式 JavaScript 框架
 - [SiliconFlow](https://siliconflow.cn/) - AI 模型服务平台
 - 所有贡献者和用户的支持
+- 特别感谢所有捐赠者的支持
 
 ---
 
