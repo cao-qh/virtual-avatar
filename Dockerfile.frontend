@@ -7,7 +7,11 @@ COPY web/package*.json ./
 RUN npm ci
 COPY web/ ./
 ARG VITE_WS_HOST
+ARG NODE_ENV
+ARG BASE_URL
 ENV VITE_WS_HOST=${VITE_WS_HOST}
+ENV NODE_ENV=${NODE_ENV}
+ENV BASE_URL=${BASE_URL}
 RUN npm run build
 
 # 第四阶段：复制构建结果到输出目录

@@ -20,6 +20,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+      args:
+        - VITE_WS_HOST=ws://caoqihao.com/virtual-avatar-server:3000
+        - NODE_ENV=production
+        - BASE_URL=/virtual-avatar/
     volumes:
       - ./frontend-build:/build-output
     networks:
