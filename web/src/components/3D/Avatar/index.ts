@@ -41,7 +41,7 @@ class Avatar extends Component {
     this.ear.listen().catch((e) => {
       console.error(e)
     })
-    this.thought = gameObject.addComponent(Thought, "ws://127.0.0.1:3000")
+    this.thought = gameObject.addComponent(Thought, import.meta.env.VITE_WS_HOST || "ws://127.0.0.1:3000")
 
     this.mouth.onEnded = () => {
       this.setState("idel")

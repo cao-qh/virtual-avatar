@@ -24,3 +24,6 @@ services:
       - ./frontend-build:/build-output
     networks:
       - mymysql_general-network
+    environment:
+      - VITE_WS_HOST=ws://caoqihao.com/virtual-avatar-server:3000
+      - NODE_ENV=production

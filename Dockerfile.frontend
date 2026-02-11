@@ -6,6 +6,8 @@ WORKDIR /app
 COPY web/package*.json ./
 RUN npm ci
 COPY web/ ./
+ARG VITE_WS_HOST
+ENV VITE_WS_HOST=${VITE_WS_HOST}
 RUN npm run build
 
 # 第四阶段：复制构建结果到输出目录
