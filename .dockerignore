@@ -1,0 +1,28 @@
+# Exclude node_modules to avoid copying local dependencies
+**/node_modules/
+**/data/
+
+# Exclude log files
+*.log
+npm-debug.log*
+
+# Exclude environment files
+.git
+
+# Exclude build artifacts
+**/dist/
+build/
+
+# Exclude temporary files
+.tmp/
+.temp/
+
+# Exclude IDE files
+.idea/
+**/.vscode/
+*.swp
+*.swo
+
+# Exclude OS files
+.DS_Store
+Thumbs.db

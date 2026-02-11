@@ -1,0 +1,11 @@
+FROM node:22-alpine3.21
+
+WORKDIR /app
+
+COPY ./server/package*.json .
+
+RUN npm install
+
+COPY ./server .
+
+CMD ["sh", "-c", "npx sequelize-cli db:migrate && npm start"]
