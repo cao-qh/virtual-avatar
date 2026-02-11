@@ -49,6 +49,8 @@ class GameManager {
   private controls: OrbitControls
 
   constructor(c: HTMLCanvasElement) {
+    console.log('GameManager: 初始化，baseUrl =', baseUrl)
+    
     this.loadingManager = new THREE.LoadingManager()
     this.modelManager = new ModelManager(this.loadingManager)
     this.textureManager = new TextureManager(this.loadingManager)
@@ -84,6 +86,8 @@ class GameManager {
   }
 
   start() {
+    console.log('GameManager: start() 被调用')
+    
     this.cameraManager.setCameraPosition(
       12.432661101448488,
       5.11628329283235,
@@ -103,16 +107,16 @@ class GameManager {
     // 创建home
     const homeObject = this.gameObjectManager.createGameObject(
       this.sceneManager.getScene(),
-      Home.name,
+      'Home',  // 使用字符串'Home'
     )
-    const homeComponent = homeObject.addComponent(Home, this.modelManager.getModel(Home.name),this.textureManager.getTexture(Home.name),this.sceneManager.getEnvironmentMap()) as Home
+    const homeComponent = homeObject.addComponent(Home, this.modelManager.getModel('Home'),this.textureManager.getTexture('Home'),this.sceneManager.getEnvironmentMap()) as Home
 
     // 创建角色
     const avatarObject = this.gameObjectManager.createGameObject(
       this.sceneManager.getScene(),
-      Avatar.name,
+      'Avatar',
     )
-    avatarObject.addComponent(Avatar, this.modelManager.getModel(Avatar.name),this.textureManager.getTexture(Avatar.name),homeComponent.getAvatarPosition(),this.sceneManager.getEnvironmentMap())
+    avatarObject.addComponent(Avatar, this.modelManager.getModel('Avatar'),this.textureManager.getTexture('Avatar'),homeComponent.getAvatarPosition(),this.sceneManager.getEnvironmentMap())
 
     // 给射线管理器添加可被射线检测的物体
     this.raycasterManager.addRaycasterObject(homeComponent.getRaycasterObjects())

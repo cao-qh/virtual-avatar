@@ -22,6 +22,13 @@ class Home extends Component {
     super(gameObject)
     this.textures = textures
     this.environmentMap = environmentMap
+    
+    // 添加模型检查
+    if (!model || !model.gltf) {
+      console.error('Home组件: 模型加载失败，model或model.gltf为undefined')
+      return
+    }
+    
     this.addMaterial(model)
     this.gameObject.transform.add(model.gltf.scene)
     this.playIntroAnimation()
