@@ -8,4 +8,4 @@ RUN npm install
 
 COPY ./server .
 
-CMD ["sh", "-c", "npx sequelize-cli db:migrate && npm start"]
+CMD ["sh", "-c", "npm start"]

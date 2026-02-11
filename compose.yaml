@@ -3,20 +3,12 @@ networks:
     external: true # 引用外部已存在的网络
 
 services:
-  server:
+  virtual-avatar-server:
     build:
       context: .
       dockerfile: Dockerfile.server
-    environment:
-      - DB_HOST=mymysql
-      - DB_USER=caoqihao
-      - DB_PASSWORD=caoqihao
-      - DB_NAME=mysite
-      - NODE_ENV=production
     networks:
       - mymysql_general-network
-    volumes:
-      - ./server/uploads:/app/uploads
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
@@ -24,7 +16,7 @@ services:
       retries: 3
       start_period: 40s
 
-  frontend:
+  virtual-avatar-frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
