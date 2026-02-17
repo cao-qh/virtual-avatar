@@ -82,19 +82,8 @@ class GameManager {
       await this.textureManager.load(textureConfig)
       await this.modelManager.loadMore(modles)
       
-      await new Promise<void>((resolve, reject) => {
-        this.sceneManager.loadEnvironmentTexture(cubeTexturePath)
-        // SceneManager.loadEnvironmentTexture是同步的，但加载是异步的
-        // 等待一段时间确保加载完成
-        setTimeout(() => {
-          const envMap = this.sceneManager.getEnvironmentMap()
-          if (envMap) {
-            resolve()
-          } else {
-            reject(new Error('环境贴图加载失败'))
-          }
-        }, 1000)
-      })
+      // 使用异步加载环境贴图
+      await this.sceneManager.loadEnvironmentTexture(cubeTexturePath)
       
       this.resourcesLoaded = true
       onLoad()

@@ -12,8 +12,8 @@ class SceneManager {
     }
   }
 
-  loadEnvironmentTexture(urls: string[]) {
-    this.environmentMap = this.cubeTextureLoader.load(urls)
+  async loadEnvironmentTexture(urls: string[]): Promise<void> {
+    this.environmentMap = await this.cubeTextureLoader.loadAsync(urls)
     this.scene.background = this.environmentMap
   }
 
