@@ -13,11 +13,9 @@ class ModelManager {
   private dracoLoader: DRACOLoader
   private baseUrl = import.meta.env.BASE_URL
   private models: Map<string, Model> = new Map()
+  private loadingPromises: Map<string, Promise<void>> = new Map()
 
   constructor(loadingManager: THREE.LoadingManager) {
-    console.log('ModelManager: baseUrl =', this.baseUrl)
-    console.log('ModelManager: DRACO解码器路径 =', this.baseUrl + "draco/")
-    
     this.gltfLoader = new GLTFLoader(loadingManager)
     this.dracoLoader = new DRACOLoader()
     this.dracoLoader.setDecoderPath(this.baseUrl + "draco/")
@@ -36,57 +34,84 @@ class ModelManager {
     return animsByName
   }
 
-  loadMore(data: Record<string, string>) {
-    console.log('ModelManager: 开始加载模型，数据:', data)
+  async loadMore(data: Record<string, string>): Promise<void> {
+    const loadPromises: Promise<void>[] = []
     
-    Object.entries(data).forEach(([key, url]) => {
+    for (const [key, url] of Object.entries(data)) {
       if (this.models.has(key)) {
-        return
+        continue
       }
 
-      console.log(`ModelManager: 加载模型 ${key}，URL: ${url}`)
+      const loadPromise = new Promise<void>((resolve, reject) => {
+        this.gltfLoader.load(
+          url,
+          (gltf: GLTF) => {
+            this.models.set(key, {
+              url,
+              gltf,
+              animations: this.formatAnimations(gltf),
+            })
+            resolve()
+          },
+          undefined,
+          (error: unknown) => {
+            const errorMessage = error instanceof ErrorEvent ? error.message : 
+                               error instanceof Error ? error.message : 
+                               String(error)
+            console.error(`ModelManager: 加载模型 ${key} (${url}) 失败:`, error)
+            reject(new Error(`模型 ${key} 加载失败: ${errorMessage}`))
+          }
+        )
+      })
       
+      this.loadingPromises.set(key, loadPromise)
+      loadPromises.push(loadPromise)
+    }
+    
+    await Promise.all(loadPromises)
+  }
+
+  loadSingle(name: string, path: string): Promise<void> {
+    return new Promise((resolve, reject) => {
       this.gltfLoader.load(
-        url,
+        path,
         (gltf: GLTF) => {
-          console.log(`ModelManager: 模型 ${key} 加载成功`)
-          this.models.set(key, {
-            url,
+          this.models.set(name, {
+            url: path,
             gltf,
             animations: this.formatAnimations(gltf),
           })
+          resolve()
         },
         undefined,
-        (error) => {
-          console.error(`ModelManager: 加载模型 ${key} (${url}) 失败:`, error)
+        (error: unknown) => {
+          const errorMessage = error instanceof ErrorEvent ? error.message : 
+                             error instanceof Error ? error.message : 
+                             String(error)
+          console.error(`加载模型 ${name} (${path}) 失败:`, error)
+          reject(new Error(`模型 ${name} 加载失败: ${errorMessage}`))
         }
       )
     })
   }
 
-  loadSingle(name: string, path: string) {
-    this.gltfLoader.load(
-      path,
-      (gltf: GLTF) => {
-        this.models.set(name, {
-          url: path,
-          gltf,
-          animations: this.formatAnimations(gltf),
-        })
-      },
-      undefined,
-      (error) => {
-        console.error(`加载模型 ${name} (${path}) 失败:`, error)
-      }
-    )
+  getModel(key: string): Model | undefined {
+    const model = this.models.get(key)
+    if (!model) {
+      console.warn(`ModelManager: 模型 ${key} 未找到或未加载完成`)
+    }
+    return model
   }
 
-  getModel(key: string): Model | undefined {
-    console.log(`ModelManager: getModel("${key}")`)
-    console.log(`ModelManager: Map中的键:`, Array.from(this.models.keys()))
-    const model = this.models.get(key)
-    console.log(`ModelManager: 找到的模型:`, model ? '存在' : 'undefined')
-    return model
+  async waitForModel(key: string): Promise<void> {
+    const promise = this.loadingPromises.get(key)
+    if (promise) {
+      await promise
+    }
+  }
+
+  isLoaded(key: string): boolean {
+    return this.models.has(key)
   }
 }
 

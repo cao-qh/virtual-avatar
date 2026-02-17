@@ -47,10 +47,9 @@ class GameManager {
   private gameObjectManager: GameObjectManager
   private raycasterManager : RaycasterManager
   private controls: OrbitControls
+  private resourcesLoaded: boolean = false
 
   constructor(c: HTMLCanvasElement) {
-    console.log('GameManager: 初始化，baseUrl =', baseUrl)
-    
     this.loadingManager = new THREE.LoadingManager()
     this.modelManager = new ModelManager(this.loadingManager)
     this.textureManager = new TextureManager(this.loadingManager)
@@ -70,23 +69,47 @@ class GameManager {
     this.controls = new OrbitControls(this.cameraManager.getCamera(), this.canvas)
   }
 
-  init(onLoad: () => void, onProgress?: (progress: number) => void) {
-    this.loadingManager.onLoad = onLoad
-    this.loadingManager.onProgress = (_, itemsLoaded, itemsTotal) => {
-      //  console.log(`Loading file: ${url}`)
-      onProgress?.(itemsLoaded / itemsTotal)
+  async init(onLoad: () => void, onProgress?: (progress: number) => void): Promise<void> {
+    // 设置进度回调（可选）
+    if (onProgress) {
+      this.loadingManager.onProgress = (_, itemsLoaded, itemsTotal) => {
+        onProgress(itemsLoaded / itemsTotal)
+      }
     }
 
-    // 加载纹理贴图
-    this.textureManager.load(textureConfig)
-    // 加载模型
-    this.modelManager.loadMore(modles)
-    // 加载环境贴图
-    this.sceneManager.loadEnvironmentTexture(cubeTexturePath)
+    try {
+      // 按顺序加载所有资源，确保所有资源都加载完成
+      await this.textureManager.load(textureConfig)
+      await this.modelManager.loadMore(modles)
+      
+      await new Promise<void>((resolve, reject) => {
+        this.sceneManager.loadEnvironmentTexture(cubeTexturePath)
+        // SceneManager.loadEnvironmentTexture是同步的，但加载是异步的
+        // 等待一段时间确保加载完成
+        setTimeout(() => {
+          const envMap = this.sceneManager.getEnvironmentMap()
+          if (envMap) {
+            resolve()
+          } else {
+            reject(new Error('环境贴图加载失败'))
+          }
+        }, 1000)
+      })
+      
+      this.resourcesLoaded = true
+      onLoad()
+      
+    } catch (error) {
+      console.error('GameManager: 资源加载失败:', error)
+      throw new Error(`资源加载失败: ${error instanceof Error ? error.message : String(error)}`)
+    }
   }
 
   start() {
-    console.log('GameManager: start() 被调用')
+    if (!this.resourcesLoaded) {
+      console.error('GameManager: 错误 - 在资源加载完成前调用了start()')
+      throw new Error('资源尚未加载完成，请先等待init()完成')
+    }
     
     this.cameraManager.setCameraPosition(
       12.432661101448488,
@@ -104,25 +127,50 @@ class GameManager {
     // controls.enablePan = false
     this.controls.enableDamping = true
 
+    // 检查资源是否可用
+    const homeModel = this.modelManager.getModel('Home')
+    const homeTexture = this.textureManager.getTexture('Home')
+    const avatarModel = this.modelManager.getModel('Avatar')
+    const avatarTexture = this.textureManager.getTexture('Avatar')
+    const environmentMap = this.sceneManager.getEnvironmentMap()
+
+    if (!homeModel || !homeTexture) {
+      console.error('GameManager: Home模型或纹理未加载')
+      throw new Error('Home资源未加载完成')
+    }
+
+    if (!avatarModel || !avatarTexture) {
+      console.error('GameManager: Avatar模型或纹理未加载')
+      throw new Error('Avatar资源未加载完成')
+    }
+
+    if (!environmentMap) {
+      console.warn('GameManager: 环境贴图未加载，但将继续')
+    }
+
     // 创建home
     const homeObject = this.gameObjectManager.createGameObject(
       this.sceneManager.getScene(),
       'Home',  // 使用字符串'Home'
     )
-    const homeComponent = homeObject.addComponent(Home, this.modelManager.getModel('Home'),this.textureManager.getTexture('Home'),this.sceneManager.getEnvironmentMap()) as Home
+    const homeComponent = homeObject.addComponent(Home, homeModel, homeTexture, environmentMap) as Home
 
     // 创建角色
     const avatarObject = this.gameObjectManager.createGameObject(
       this.sceneManager.getScene(),
       'Avatar',
     )
-    avatarObject.addComponent(Avatar, this.modelManager.getModel('Avatar'),this.textureManager.getTexture('Avatar'),homeComponent.getAvatarPosition(),this.sceneManager.getEnvironmentMap())
+    avatarObject.addComponent(Avatar, avatarModel, avatarTexture, homeComponent.getAvatarPosition(), environmentMap)
 
     // 给射线管理器添加可被射线检测的物体
     this.raycasterManager.addRaycasterObject(homeComponent.getRaycasterObjects())
   }
 
   update() {
+    if (!this.resourcesLoaded) {
+      return // 资源未加载完成，跳过更新
+    }
+
     if (resizeRendererToDisplaySize()) {
       this.cameraManager.getCamera().aspect =
         this.canvas.clientWidth / this.canvas.clientHeight

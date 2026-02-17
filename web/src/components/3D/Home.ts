@@ -38,7 +38,6 @@ class Home extends Component {
     model.gltf.scene.traverse((child: THREE.Object3D) => {
       if (child.name.includes("avatar_position")) {
         this.avatarPosition = child
-        // console.log('找到avatar_position:', child.position, child.rotation, child.scale)
       }
       if (child.name.includes("Fan")) {
         this.fans.push(child)
@@ -124,27 +123,76 @@ class Home extends Component {
             map: videoTexture,
           })
         } else {
+          let materialApplied = false
+          
           this.textures.forEach((value, key) => {
-            //  console.log('child.name:',child.name)
-            //  console.log('key:',key)
-
             if (child.name.includes(key)) {
               try {
-                child.material = new THREE.MeshBasicMaterial({
-                  map: value,
-                })
+                // 检查纹理是否有效且已加载
+                if (value && value instanceof THREE.Texture) {
+                  // 检查纹理图片是否完全加载
+                  const textureImage = value.image as HTMLImageElement | undefined
+                  if (textureImage && textureImage.complete) {
+                    child.material = new THREE.MeshBasicMaterial({
+                      map: value,
+                    })
 
-                if (child.material.map) {
-                  child.material.map.minFilter = THREE.LinearFilter
+                    if (child.material.map) {
+                      child.material.map.minFilter = THREE.LinearFilter
+                    }
+                    materialApplied = true
+                  } else {
+                    // 如果图片未加载完成，设置一个回调
+                    if (textureImage) {
+                      textureImage.onload = () => {
+                        child.material = new THREE.MeshBasicMaterial({
+                          map: value,
+                        })
+                        if (child.material.map) {
+                          child.material.map.minFilter = THREE.LinearFilter
+                        }
+                        child.material.needsUpdate = true
+                      }
+                      textureImage.onerror = () => {
+                        this.applyPlaceholderMaterial(child)
+                      }
+                    }
+                    // 暂时使用占位材质
+                    this.applyPlaceholderMaterial(child)
+                  }
+                } else {
+                  this.applyPlaceholderMaterial(child)
                 }
               } catch (error) {
-                console.error(`为 ${child.name} 创建材质失败:`, error)
+                console.error(`Home: 为 ${child.name} 创建材质失败:`, error)
+                this.applyPlaceholderMaterial(child)
               }
             }
           })
+          
+          // 如果没有应用任何材质，使用占位材质
+          if (!materialApplied) {
+            this.applyPlaceholderMaterial(child)
+          }
         }
       }
     })
+  }
+
+  private applyPlaceholderMaterial(mesh: THREE.Mesh) {
+    // 创建唯一的占位颜色基于网格名称的hash
+    let hash = 0
+    for (let i = 0; i < mesh.name.length; i++) {
+      hash = mesh.name.charCodeAt(i) + ((hash << 5) - hash)
+    }
+    const hue = Math.abs(hash % 360)
+    const color = new THREE.Color(`hsl(${hue}, 50%, 50%)`)
+    
+    mesh.material = new THREE.MeshBasicMaterial({
+      color: color,
+      name: `placeholder_${mesh.name}`
+    })
+    mesh.material.needsUpdate = true
   }
 
   private playIntroAnimation() {

@@ -31,20 +31,29 @@ const handleOpenDialog = (title: string) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   // 监听打开对话框事件
   eventBus.on('open-dialog', handleOpenDialog)
 
   const gameManager = new GameManager(c.value)
 
-  gameManager.init(() => {
-    console.log('资源加载完成')
-    loaded.value = true
-    gameManager.start()
-  }, (progress: number) => {
-    loadingProgress.value = progress
-  })
-
+  try {
+    await gameManager.init(() => {
+      console.log('资源加载完成')
+      loaded.value = true
+      try {
+        gameManager.start()
+      } catch (startError) {
+        console.error('启动游戏失败:', startError)
+      }
+    }, (progress: number) => {
+      loadingProgress.value = progress
+    })
+  } catch (initError) {
+    console.error('资源加载失败:', initError)
+    // 可以在这里添加用户友好的错误提示
+    return // 资源加载失败，不启动渲染循环
+  }
 
   let then = 0;
   function render(now:number) {
